@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p .",
     "watch": "tsc -w -p .",
-    "clean": "rimraf dist",
+    "clean": "rimraf dist tmp",
     "test": "jest",
     "util:gen-diagram": "ts-node ./scripts/generate-diagram.ts"
   },

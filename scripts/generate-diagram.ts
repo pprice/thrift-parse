@@ -8,5 +8,8 @@ const grammar = new ThriftGrammar();
 const seralizedGrammaar = grammar.parser.getSerializedGastProductions();
 const html = createSyntaxDiagramsCode(seralizedGrammaar);
 
-const output = path.resolve(__dirname, "../tmp/gen.html");
+const dir = path.resolve(__dirname, "../tmp");
+fs.mkdirSync(dir);
+
+const output = path.join(dir, "gen.html");
 fs.writeFileSync(output, html);
