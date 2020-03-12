@@ -107,7 +107,8 @@ export class ThriftTokens {
 
   Assignment = createToken({
     name: "Assignment",
-    pattern: /=/
+    pattern: /=/,
+    label: "="
   });
 
   ListSeparator = createToken({
@@ -118,63 +119,75 @@ export class ThriftTokens {
   Semi = createToken({
     name: "Semi",
     pattern: /;/,
-    categories: [this.ListSeparator]
+    categories: [this.ListSeparator],
+    label: ";"
   });
 
   Comma = createToken({
     name: "Comma",
     pattern: /,/,
-    categories: [this.ListSeparator]
+    categories: [this.ListSeparator],
+    label: ","
   });
 
   LParen = createToken({
     name: "LParen",
-    pattern: /\(/
+    pattern: /\(/,
+    label: "("
   });
 
   RParen = createToken({
     name: "RParen",
-    pattern: /\)/
+    pattern: /\)/,
+    label: ")"
   });
 
   LCurly = createToken({
     name: "LCurly",
-    pattern: /{/
+    pattern: /{/,
+    label: "{"
   });
 
   RCurly = createToken({
     name: "RCurly",
-    pattern: /}/
+    pattern: /}/,
+    label: "}"
   });
 
   LBracket = createToken({
     name: "LBracket",
-    pattern: /\[/
+    pattern: /\[/,
+    label: "["
   });
 
   RBracket = createToken({
     name: "RBracket",
-    pattern: /\]/
+    pattern: /\]/,
+    label: "]"
   });
 
   LTemplate = createToken({
     name: "LTemplate",
-    pattern: /</
+    pattern: /</,
+    label: "<"
   });
 
   RTemplate = createToken({
     name: "RTemplate",
-    pattern: />/
+    pattern: />/,
+    label: ">"
   });
 
   Colon = createToken({
     name: "Colon",
-    pattern: /:/
+    pattern: /:/,
+    label: ":"
   });
 
   Wildcard = createToken({
     name: "Wildcard",
-    pattern: /\*/
+    pattern: /\*/,
+    label: "*"
   });
 
   Identifier = createToken({
@@ -253,17 +266,17 @@ export class ThriftTokens {
   });
 
   I16 = this.createKeywordToken({
-    name: "i16",
+    name: "I16",
     pattern: /i16/
   });
 
   I32 = this.createKeywordToken({
-    name: "i32",
+    name: "I32",
     pattern: /i32/
   });
 
   I64 = this.createKeywordToken({
-    name: "i64",
+    name: "I64",
     pattern: /i64/
   });
 

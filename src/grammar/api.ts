@@ -1,9 +1,9 @@
 import { Lexer, ThriftLexer } from "./lexer";
 
-import { ThriftParser } from "./parser";
+import { ThriftCstParser } from "./parser";
 
 export class ThriftGrammar {
-  public parser: ThriftParser = new ThriftParser();
+  public parser: ThriftCstParser = new ThriftCstParser();
   public lexer: ThriftLexer = Lexer;
 
   constructor() {}

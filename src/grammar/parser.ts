@@ -4,7 +4,7 @@ import { Lexer, Tokens } from "./lexer";
 /**
  * Reference: https://thrift.apache.org/docs/idl
  */
-export class ThriftParser extends CstParser {
+export class ThriftCstParser extends CstParser {
   constructor() {
     super(Tokens.Order);
     this.performSelfAnalysis();
@@ -28,9 +28,9 @@ export class ThriftParser extends CstParser {
       this.CONSUME(keywordToken);
       this.CONSUME(Tokens.Identifier, { LABEL: "id" });
       this.CONSUME(Tokens.LCurly);
-      this.MANY(() => this.SUBRULE(this.field));
+      this.MANY(() => this.SUBRULE(this.field, { LABEL: "fields" }));
       this.CONSUME(Tokens.RCurly);
-      this.OPTION(() => this.SUBRULE(this.annotations));
+      this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
     });
   }
 
@@ -76,7 +76,7 @@ export class ThriftParser extends CstParser {
       { ALT: () => this.CONSUME(Tokens.Wildcard, { LABEL: "scope" }) }
     ]);
     this.CONSUME2(Tokens.Identifier, { LABEL: "id" });
-    this.OPTION(() => this.SUBRULE(this.annotations));
+    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private cppInclude = this.RULE("cpp_include", () => {
@@ -121,7 +121,7 @@ export class ThriftParser extends CstParser {
       this.CONSUME3(Tokens.Assignment);
       this.SUBRULE3(this.constValue, { LABEL: "value" });
     });
-    this.OPTION4(() => this.SUBRULE(this.annotations));
+    this.OPTION4(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
     this.OPTION5(() => this.CONSUME(Tokens.ListSeparator));
   });
 
@@ -141,7 +141,7 @@ export class ThriftParser extends CstParser {
     //   DEF: () => this.SUBRULE(this.enumValue)
     // });
 
-    this.MANY(() => this.SUBRULE(this.enumValue));
+    this.MANY(() => this.SUBRULE(this.enumValue, { LABEL: "values" }));
 
     // There could be a trailing list separator
     this.OPTION(() => this.CONSUME2(Tokens.ListSeparator));
@@ -174,7 +174,7 @@ export class ThriftParser extends CstParser {
     this.CONSUME(Tokens.Typedef);
     this.SUBRULE(this.definitionType, { LABEL: "type" });
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
-    this.OPTION(() => this.SUBRULE(this.annotations));
+    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private service = this.RULE("service", () => {
@@ -187,7 +187,7 @@ export class ThriftParser extends CstParser {
     this.CONSUME(Tokens.LCurly);
     this.MANY(() => this.SUBRULE(this.functionDeclaration, { LABEL: "function" }));
     this.CONSUME(Tokens.RCurly);
-    this.OPTION3(() => this.SUBRULE(this.annotations));
+    this.OPTION3(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private functionDeclaration = this.RULE("function", () => {
@@ -229,13 +229,13 @@ export class ThriftParser extends CstParser {
 
   private constValue = this.RULE("constValue", () => {
     this.OR([
-      { ALT: () => this.CONSUME(Tokens.StringLiteral) },
-      { ALT: () => this.CONSUME(Tokens.HexConst) },
-      { ALT: () => this.CONSUME(Tokens.IntConst) },
-      { ALT: () => this.CONSUME(Tokens.DoubleConst) },
-      { ALT: () => this.CONSUME(Tokens.Identifier) },
-      { ALT: () => this.SUBRULE(this.mapConst) },
-      { ALT: () => this.SUBRULE(this.listConst) }
+      { ALT: () => this.CONSUME(Tokens.StringLiteral, { LABEL: "string" }) },
+      { ALT: () => this.CONSUME(Tokens.HexConst, { LABEL: "hex" }) },
+      { ALT: () => this.CONSUME(Tokens.IntConst, { LABEL: "int" }) },
+      { ALT: () => this.CONSUME(Tokens.DoubleConst, { LABEL: "double" }) },
+      { ALT: () => this.CONSUME(Tokens.Identifier, { LABEL: "id" }) },
+      { ALT: () => this.SUBRULE(this.mapConst, { LABEL: "map_const" }) },
+      { ALT: () => this.SUBRULE(this.listConst, { LABEL: "list_const" }) }
     ]);
   });
 
@@ -248,7 +248,7 @@ export class ThriftParser extends CstParser {
     this.CONSUME(Tokens.LBracket);
     this.MANY_SEP({
       SEP: Tokens.ListSeparator,
-      DEF: () => this.SUBRULE(this.constValue)
+      DEF: () => this.SUBRULE(this.constValue, { LABEL: "value" })
     });
     this.CONSUME(Tokens.RBracket);
   });
@@ -257,7 +257,7 @@ export class ThriftParser extends CstParser {
     this.CONSUME(Tokens.LCurly);
     this.MANY_SEP({
       SEP: Tokens.ListSeparator,
-      DEF: () => this.SUBRULE(this.mapValue)
+      DEF: () => this.SUBRULE(this.mapValue, { LABEL: "value" })
     });
     this.CONSUME(Tokens.RCurly);
   });
@@ -283,24 +283,30 @@ export class ThriftParser extends CstParser {
 
   private containerType = this.RULE("container_type", () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.mapType) },
-      { ALT: () => this.SUBRULE(this.listType) },
-      { ALT: () => this.SUBRULE(this.setType) }
+      { ALT: () => this.SUBRULE(this.mapType, { LABEL: "map" }) },
+      { ALT: () => this.SUBRULE(this.listType, { LABEL: "list" }) },
+      { ALT: () => this.SUBRULE(this.setType, { LABEL: "set" }) }
     ]);
   });
 
   private definitionType = this.RULE("definition_type", () => {
-    this.OR([{ ALT: () => this.SUBRULE(this.baseType) }, { ALT: () => this.SUBRULE(this.containerType) }]);
-    this.OPTION(() => this.SUBRULE(this.annotations));
+    this.OR([
+      { ALT: () => this.SUBRULE(this.baseType, { LABEL: "base_type" }) },
+      { ALT: () => this.SUBRULE(this.containerType, { LABEL: "container_type" }) }
+    ]);
+    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private type = this.RULE("type", () => {
-    this.OR([{ ALT: () => this.SUBRULE(this.definitionType) }, { ALT: () => this.CONSUME(Tokens.Identifier) }]);
+    this.OR([
+      { ALT: () => this.SUBRULE(this.definitionType, { LABEL: "definition_type" }) },
+      { ALT: () => this.CONSUME(Tokens.Identifier, { LABEL: "identifier_type" }) }
+    ]);
   });
 
   private mapType = this.RULE("map", () => {
     this.CONSUME(Tokens.Map);
-    this.OPTION(() => this.SUBRULE(this.cppType));
+    this.OPTION(() => this.SUBRULE(this.cppType, { LABEL: "cpp_type" }));
     this.CONSUME(Tokens.LTemplate);
     this.SUBRULE1(this.type, { LABEL: "key_type" });
     this.CONSUME(Tokens.Comma);
@@ -336,3 +342,5 @@ export class ThriftParser extends CstParser {
     this.OPTION(() => this.CONSUME(Tokens.Semi));
   });
 }
+
+export const ThriftParser = new ThriftCstParser();
