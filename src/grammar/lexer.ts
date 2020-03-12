@@ -15,6 +15,11 @@ type PatternMatcher<T> = (text: string, offset: number) => RegExpExecArrayWithPa
  * Reference: https://thrift.apache.org/docs/idl
  */
 export class ThriftTokens {
+  /**
+   * Creates a token type that will expand to identifier in the case of a longer available match.
+   * This is used used to disambiguate a keyword (e.g. optional) vs an identifer (e.g. optionalThing).
+   * @param {ITokenConfig} config Token configuration
+   */
   private createKeywordToken(config: ITokenConfig) {
     if (!this.Identifier) {
       throw new Error("Unable to create keyword token as longer_alt is not defined");
@@ -28,6 +33,11 @@ export class ThriftTokens {
     return token;
   }
 
+  /**
+   * Validates a set of TokenTypes to ensure there are no undefined entries or categories
+   * @param {TokenType[]} tokens TokenTypes to validate
+   * @returns {TokenType[]} Input token types, if validation successful
+   */
   private validateTokens(tokens: TokenType[]): TokenType[] {
     for (let i = 0; i < tokens.length; i++) {
       let token = tokens[i];
@@ -44,7 +54,19 @@ export class ThriftTokens {
     return tokens;
   }
 
+  /**
+   * Creates a custom pattern matcher that, if successfully matched, will set a token payload
+   * on the resulting token node by passing the match the the specified parser.
+   *
+   * @param {RegExp} expression Matching regular expression
+   * @param {PayloadParser<T>} parser Callback function which is called to generated token payload
+   * @returns {PatternMatcher<T>} Pattern matching function
+   */
   private makeRegexPayloadMatcher<T>(expression: RegExp, parser: PayloadParser<T>): PatternMatcher<T> {
+    if (!expression.sticky) {
+      throw new Error(`Expression ${expression} must be configured to be sticky ('y' flag)`);
+    }
+
     return (text, offset) => {
       expression.lastIndex = offset;
       const execResult: RegExpExecArrayWithPayload<T> = expression.exec(text);
