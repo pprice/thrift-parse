@@ -1,5 +1,16 @@
 import { Lexer as CTLexer, ITokenConfig, TokenType, createToken } from "chevrotain";
 
+const Patterns = {
+  StringLiteralPattern: /\"([^\r\n\f\"]*)\"|\'([^\r\n\f\']*)\'/y,
+  IntConstPattern: /[-+]?\d+/y,
+  HexConstPattern: /0x[A-f0-9]+/y,
+  DoubleConstPattern: /[-+]?(0|[1-9]\d*)\.\d+([eE][+-]?\d+)?/y
+};
+
+type RegExpExecArrayWithPayload<T> = RegExpExecArray & { payload?: T };
+type PayloadParser<T> = (match: string, fullMatch: RegExpExecArray) => T;
+type PatternMatcher<T> = (text: string, offset: number) => RegExpExecArrayWithPayload<T> | null;
+
 /**
  * Reference: https://thrift.apache.org/docs/idl
  */
@@ -31,6 +42,20 @@ export class ThriftTokens {
     }
 
     return tokens;
+  }
+
+  private makeRegexPayloadMatcher<T>(expression: RegExp, parser: PayloadParser<T>): PatternMatcher<T> {
+    return (text, offset) => {
+      expression.lastIndex = offset;
+      const execResult: RegExpExecArrayWithPayload<T> = expression.exec(text);
+      if (execResult !== null) {
+        const fullMatch = execResult[0];
+        // compute the payload
+        execResult.payload = parser(fullMatch, execResult);
+      }
+
+      return execResult;
+    };
   }
 
   Comment = createToken({
@@ -86,23 +111,26 @@ export class ThriftTokens {
 
   StringLiteral = createToken({
     name: "StringLiteral",
-    pattern: /\"([^\r\n\f\"]*)\"|\'([^\r\n\f\']*)\'/
+    pattern: this.makeRegexPayloadMatcher(Patterns.StringLiteralPattern, match => match.substr(1, match.length - 2))
   });
 
+  // TODO: BigNum support
   HexConst = createToken({
-    name: "HexLiteral",
-    pattern: /0x[A-f0-9]+/ // TODO: Split into float vs int
+    name: "HexConst",
+    pattern: this.makeRegexPayloadMatcher(Patterns.HexConstPattern, match => Number.parseInt(match))
   });
 
+  // TODO: BigNum support
   IntConst = createToken({
-    name: "IntegerLiteral",
-    pattern: /[-+]?\d+/,
+    name: "IntegerConst",
+    pattern: this.makeRegexPayloadMatcher(Patterns.IntConstPattern, match => Number.parseInt(match)),
     longer_alt: this.HexConst
   });
 
+  // TODO: BigNum support
   DoubleConst = createToken({
-    name: "DoubleLiteral",
-    pattern: /[-+]?(0|[1-9]\d*)\.\d+([eE][+-]?\d+)?/
+    name: "DoubleConst",
+    pattern: this.makeRegexPayloadMatcher(Patterns.DoubleConstPattern, match => Number.parseFloat(match))
   });
 
   Assignment = createToken({
