@@ -133,26 +133,30 @@ export class ThriftTokens {
 
   StringLiteral = createToken({
     name: "StringLiteral",
-    pattern: this.makeRegexPayloadMatcher(Patterns.StringLiteralPattern, match => match.substr(1, match.length - 2))
+    pattern: this.makeRegexPayloadMatcher(Patterns.StringLiteralPattern, match => match.substr(1, match.length - 2)),
+    line_breaks: false
   });
 
   // TODO: BigNum support
   HexConst = createToken({
     name: "HexConst",
-    pattern: this.makeRegexPayloadMatcher(Patterns.HexConstPattern, match => Number.parseInt(match))
+    pattern: this.makeRegexPayloadMatcher(Patterns.HexConstPattern, match => Number.parseInt(match)),
+    line_breaks: false
   });
 
   // TODO: BigNum support
   IntConst = createToken({
     name: "IntegerConst",
     pattern: this.makeRegexPayloadMatcher(Patterns.IntConstPattern, match => Number.parseInt(match)),
-    longer_alt: this.HexConst
+    longer_alt: this.HexConst,
+    line_breaks: false
   });
 
   // TODO: BigNum support
   DoubleConst = createToken({
     name: "DoubleConst",
-    pattern: this.makeRegexPayloadMatcher(Patterns.DoubleConstPattern, match => Number.parseFloat(match))
+    pattern: this.makeRegexPayloadMatcher(Patterns.DoubleConstPattern, match => Number.parseFloat(match)),
+    line_breaks: false
   });
 
   Assignment = createToken({
