@@ -11,7 +11,8 @@ describe("End To End Parsing", () => {
     "thrift/test/cassandra.thrift",
     "thrift/test/annotations.thrift",
     "thrift/test/ThriftTest.thrift",
-    "thrift/test/enum.thrift"
+    "thrift/test/enum.thrift",
+    "thrift/test/EnumContainers.thrift"
   ];
 
   test.each(inputs)("should lex %s", async path => {

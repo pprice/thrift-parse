@@ -173,7 +173,7 @@ export class ThriftCstParser extends CstParser {
 
   private typedef = this.RULE("typedef", () => {
     this.CONSUME(Tokens.Typedef);
-    this.SUBRULE(this.definitionType, { LABEL: "type" });
+    this.SUBRULE(this.type, { LABEL: "type" });
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
