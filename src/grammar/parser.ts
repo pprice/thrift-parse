@@ -157,7 +157,8 @@ export class ThriftCstParser extends CstParser {
       this.CONSUME(Tokens.Assignment);
       this.OR([
         { ALT: () => this.CONSUME(Tokens.HexConst, { LABEL: "value" }) },
-        { ALT: () => this.CONSUME(Tokens.IntConst, { LABEL: "value" }) }
+        { ALT: () => this.CONSUME(Tokens.IntConst, { LABEL: "value" }) },
+        { ALT: () => this.CONSUME2(Tokens.Identifier, { LABEL: "value" }) }
       ]);
     });
 
@@ -255,17 +256,21 @@ export class ThriftCstParser extends CstParser {
 
   private mapConst = this.RULE("mapConst", () => {
     this.CONSUME(Tokens.LCurly);
-    this.MANY_SEP({
-      SEP: Tokens.ListSeparator,
-      DEF: () => this.SUBRULE(this.mapValue, { LABEL: "value" })
-    });
+
+    this.MANY(() => this.SUBRULE(this.mapValue, { LABEL: "values" }));
+
+    // There could be a trailing list separator
+    this.OPTION(() => this.CONSUME2(Tokens.ListSeparator));
+
     this.CONSUME(Tokens.RCurly);
   });
 
   private mapValue = this.RULE("mapValue", () => {
-    this.CONSUME(Tokens.StringLiteral, { LABEL: "id" });
+    // Map rule is also used for const struct definitions, will need to split this out
+    this.SUBRULE1(this.constValue, { LABEL: "key" });
     this.CONSUME(Tokens.Colon);
-    this.SUBRULE(this.constValue, { LABEL: "value" });
+    this.SUBRULE2(this.constValue, { LABEL: "value" });
+    this.OPTION(() => this.CONSUME(Tokens.ListSeparator));
   });
 
   private baseType = this.RULE("base_type", () => {
