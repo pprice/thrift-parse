@@ -1,19 +1,10 @@
+import { getTestAssetContent, getThriftAssetsSync } from "./util";
+
 import { ThriftGrammar } from "../grammar";
 import { ThriftLexer } from "../grammar/lexer";
-import { getTestAssetContent } from "./util";
 
 describe("End To End Parsing", () => {
-  const inputs = [
-    "thrift/tutorial/service.thrift",
-    "thrift/tutorial/shared.thrift",
-    "thrift/missing-guide/service.thrift",
-    "thrift/test/fb303.thrift",
-    "thrift/test/cassandra.thrift",
-    "thrift/test/annotations.thrift",
-    "thrift/test/ThriftTest.thrift",
-    "thrift/test/enum.thrift",
-    "thrift/test/EnumContainers.thrift"
-  ];
+  let inputs = getThriftAssetsSync();
 
   test.each(inputs)("should lex %s", async path => {
     const lex = new ThriftLexer();
