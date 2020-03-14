@@ -144,6 +144,9 @@ export class ThriftCstParser extends CstParser {
     });
 
     this.CONSUME(Tokens.RCurly);
+
+    // SEnum post annotations
+    this.OPTION2(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private enum = this.RULE("enum", () => {
