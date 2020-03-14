@@ -1,6 +1,15 @@
+import { CstNode, ILexingError, IRecognitionException } from "chevrotain";
 import { Lexer, ThriftLexer } from "./lexer";
 
 import { ThriftCstParser } from "./parser";
+
+export type GrammarParseResult = {
+  cst?: CstNode;
+  errors: {
+    lex: ILexingError[];
+    parse: IRecognitionException[];
+  };
+};
 
 export class ThriftGrammar {
   public parser: ThriftCstParser = new ThriftCstParser();
@@ -8,7 +17,7 @@ export class ThriftGrammar {
 
   constructor() {}
 
-  public parse(text: string) {
+  public parse(text: string): GrammarParseResult {
     const lex = this.lexer.tokenize(text);
     this.parser.input = lex.tokens;
 
