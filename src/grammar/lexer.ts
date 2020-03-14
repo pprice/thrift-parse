@@ -19,7 +19,7 @@ const Patterns = {
    * Quirks:
    * 1. Thrift hexadecimal constants can have a leading sign (-+)
    */
-  HexConstPattern: /[-+]?0x[A-f0-9]+/y,
+  HexConstPattern: /[-+]?0x[A-Fa-f0-9]+/y,
   /**
    * Double constant pattern.
    *
