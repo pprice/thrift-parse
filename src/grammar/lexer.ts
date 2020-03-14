@@ -275,7 +275,7 @@ export class ThriftTokens {
 
   Identifier = createToken({
     name: "Identifier",
-    pattern: /[A-z_](\.[A-z_0-9]|[A-z_0-9])*/ // /[A-Za-z_][A-Za-z0-9_\.]*/
+    pattern: /[A-Za-z_](\.[A-Za-z_0-9]|[A-Za-z_0-9])*/
   });
 
   Include = this.createKeywordToken({
