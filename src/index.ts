@@ -1,31 +1,19 @@
-import * as fs from "fs";
-import * as path from "path";
-
-import { ThriftGrammar } from "./grammar";
-
-const test_path = path.join(__dirname, "../test");
+import { check } from "./cli";
+import yargs from "yargs";
 
 async function main() {
-  // Generate a diagram
+  const argv = yargs
+    .command(
+      "check <file>",
+      "Check parsing behavior for a single input file",
+      yargs => {
+        return yargs.positional("file", { describe: "Input file or glob pattern", type: "string", required: true });
+      },
+      argv => check({ ...argv, log: console.log })
+    )
+    .demandCommand().argv;
 
-  const content = (await fs.promises.readFile(path.join(test_path, "thrift/test/ThriftTest.thrift"))).toString("utf8");
-
-  const grammar = new ThriftGrammar();
-
-  const result = grammar.parse(content);
-
-  if (result.errors.lex) {
-    console.log(JSON.stringify(result.errors.lex, null, 2));
-  }
-
-  console.dir(result);
-  console.log(JSON.stringify(result.cst.children, null, 2));
-
-  if (result.errors.parse) {
-    console.log(JSON.stringify(result.errors.parse, null, 2));
-  }
+  await argv;
 }
 
-main().then(() => {
-  console.log("done");
-});
+main();
