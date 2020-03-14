@@ -41,5 +41,5 @@ export async function check({ file, log }: CheckProperties) {
   const e2e_time = e2e_time_handle().format();
 
   log();
-  log(`Processed ${matches.length} files in ${e2e_time.value.toFixed()} ${e2e_time.unit}`);
+  log(`Processed ${matches.length} files in ${e2e_time.value.toFixed(2)} ${e2e_time.unit}`);
 }
