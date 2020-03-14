@@ -196,6 +196,7 @@ export class ThriftCstParser extends CstParser {
     this.SUBRULE(this.type, { LABEL: "type" });
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OPTION2(() => this.CONSUME(Tokens.ListSeparator));
   });
 
   private service = this.RULE("service", () => {
