@@ -269,7 +269,7 @@ export class ThriftCstParser extends CstParser {
   private listConst = this.RULE("listConst", () => {
     this.CONSUME(Tokens.LBracket);
     this.MANY_SEP({
-      SEP: Tokens.ListSeparator,
+      SEP: Tokens.Comma,
       DEF: () => this.SUBRULE(this.constValue, { LABEL: "value" })
     });
     this.CONSUME(Tokens.RBracket);
