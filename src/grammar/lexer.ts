@@ -1,10 +1,33 @@
 import { Lexer as CTLexer, ITokenConfig, TokenType, createToken } from "chevrotain";
 
 const Patterns = {
+  /**
+   * String literal pattern.
+   *
+   * Quirks.
+   * 1. Can be enclosed in " OR '
+   */
   StringLiteralPattern: /\"([^\r\n\f\"]*)\"|\'([^\r\n\f\']*)\'/y,
-  IntConstPattern: /[-+]?\d+/y,
-  HexConstPattern: /0x[A-f0-9]+/y,
-  DoubleConstPattern: /[-+]?(0|[1-9]\d*)\.\d+([eE][+-]?\d+)?/y
+
+  /**
+   * Integer constant pattern.
+   */
+  IntConstPattern: /[-+]?\d+([eE]\d+)?/y,
+  /**
+   * Hex constant pattern.
+   *
+   * Quirks:
+   * 1. Thrift hexadecimal constants can have a leading sign (-+)
+   */
+  HexConstPattern: /[-+]?0x[A-f0-9]+/y,
+  /**
+   * Double constant pattern.
+   *
+   * Quirks:
+   * 1. Thrift doubles can have any number of leading 0s
+   * 2.
+   */
+  DoubleConstPattern: /[-+]?([0-9]\d*)\.\d+([eE][+-]?\d+)?/y
 };
 
 type RegExpExecArrayWithPayload<T> = RegExpExecArray & { payload?: T };
@@ -244,9 +267,15 @@ export class ThriftTokens {
     label: "*"
   });
 
+  Ampersand = createToken({
+    name: "Ampersand",
+    pattern: /&/,
+    label: "*&"
+  });
+
   Identifier = createToken({
     name: "Identifier",
-    pattern: /[A-Za-z_][A-Za-z0-9_\.]*/
+    pattern: /[A-z_](\.[A-z_0-9]|[A-z_0-9])*/ // /[A-Za-z_][A-Za-z0-9_\.]*/
   });
 
   Include = this.createKeywordToken({
@@ -282,6 +311,11 @@ export class ThriftTokens {
   Enum = this.createKeywordToken({
     name: "Enum",
     pattern: /enum/
+  });
+
+  SEnum = this.createKeywordToken({
+    name: "SEnum",
+    pattern: /senum/
   });
 
   Union = this.createKeywordToken({
@@ -418,12 +452,13 @@ export class ThriftTokens {
     this.RBracket,
     this.LCurly,
     this.RCurly,
+    this.Ampersand, // Used for recursive structs
     this.Wildcard, // Only used for namespaces
     // Constants
     this.StringLiteral,
-    this.IntConst,
+    this.DoubleConst, // NOTE: We need to attempt to tokenize doubles before integers as they are ambiguous
     this.HexConst,
-    this.DoubleConst,
+    this.IntConst,
     // Header
     this.Include,
     this.CPPInclude,
@@ -434,6 +469,7 @@ export class ThriftTokens {
     this.Struct,
     this.Union,
     this.Enum,
+    this.SEnum,
     this.Service,
     this.Exception,
     // Keywords

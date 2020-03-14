@@ -92,6 +92,7 @@ export class ThriftCstParser extends CstParser {
       { ALT: () => this.SUBRULE(this.constDefinition, { LABEL: "const" }) },
       { ALT: () => this.SUBRULE(this.typedef, { LABEL: "typedef" }) },
       { ALT: () => this.SUBRULE(this.enum, { LABEL: "enum" }) },
+      { ALT: () => this.SUBRULE(this.senum, { LABEL: "senum" }) },
       { ALT: () => this.SUBRULE(this.struct, { LABEL: "struct" }) },
       { ALT: () => this.SUBRULE(this.union, { LABEL: "union" }) },
       { ALT: () => this.SUBRULE(this.exception, { LABEL: "exception" }) },
@@ -116,18 +117,34 @@ export class ThriftCstParser extends CstParser {
     this.OPTION1(() => this.SUBRULE(this.fieldId, { LABEL: "id" }));
     this.OPTION2(() => this.SUBRULE(this.fieldReq, { LABEL: "req" }));
     this.SUBRULE1(this.type, { LABEL: "type" });
+
+    this.OPTION3(() => this.CONSUME(Tokens.Ampersand, { LABEL: "reference" }));
+
     this.CONSUME1(Tokens.Identifier, { LABEL: "identifier" });
-    this.OPTION3(() => {
+    this.OPTION4(() => {
       this.CONSUME3(Tokens.Assignment);
       this.SUBRULE3(this.constValue, { LABEL: "value" });
     });
-    this.OPTION4(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
-    this.OPTION5(() => this.CONSUME(Tokens.ListSeparator));
+    this.OPTION5(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OPTION6(() => this.CONSUME(Tokens.ListSeparator));
   });
 
   private union = this.createKeywordFieldConsumer("union", Tokens.Union);
   private struct = this.createKeywordFieldConsumer("struct", Tokens.Struct);
   private exception = this.createKeywordFieldConsumer("exception", Tokens.Exception);
+
+  private senum = this.RULE("senum", () => {
+    this.CONSUME(Tokens.SEnum);
+    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.LCurly);
+
+    this.MANY(() => {
+      this.CONSUME(Tokens.StringLiteral);
+      this.OPTION(() => this.CONSUME(Tokens.ListSeparator));
+    });
+
+    this.CONSUME(Tokens.RCurly);
+  });
 
   private enum = this.RULE("enum", () => {
     // NOTE: Enums are different from other field keyword consumers, they do not
