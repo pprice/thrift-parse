@@ -107,7 +107,6 @@ export class ThriftTokens {
     name: "Comment",
     pattern: CTLexer.NA,
     group: CTLexer.SKIPPED,
-    // eslint-disable-next-line @typescript-eslint/camelcase
     line_breaks: true
   });
 
@@ -453,7 +452,7 @@ export class ThriftTokens {
     this.RBracket,
     this.LCurly,
     this.RCurly,
-    this.Ampersand, // Used for recursive structs
+    this.Ampersand, // Used for recursive structures
     this.Wildcard, // Only used for namespaces
     // Constants
     this.StringLiteral,
