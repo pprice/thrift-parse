@@ -1,7 +1,7 @@
 import { check } from "./cli";
 import yargs from "yargs";
 
-async function main() {
+async function main(): Promise<void> {
   const argv = yargs
     .command(
       "check <file>",

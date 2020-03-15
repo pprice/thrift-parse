@@ -1,5 +1,8 @@
-import { CstNode, CstParser, GrammarAction, TokenType } from "chevrotain";
-import { Lexer, Tokens } from "./lexer";
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+
+import { CstParser, TokenType } from "chevrotain";
+
+import { Tokens } from "./lexer";
 
 /**
  * Reference: https://thrift.apache.org/docs/idl
@@ -46,11 +49,6 @@ export class ThriftCstParser extends CstParser {
     this.MANY2(() => {
       this.SUBRULE2(this.definition, { LABEL: "definition" });
     });
-  });
-
-  // TODO: We should decorate comments back into the tree
-  private comment = this.RULE("comment", () => {
-    this.CONSUME(Tokens.Comment);
   });
 
   /**

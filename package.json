@@ -7,6 +7,7 @@
     "build": "tsc -p .",
     "watch": "tsc -w -p .",
     "clean": "rimraf dist tmp",
+    "lint": "eslint . --ext .ts",
     "test": "jest",
     "util:gen-diagram": "ts-node ./scripts/generate-diagram.ts"
   },
@@ -19,10 +20,15 @@
     "@types/jest": "^25.1.4",
     "@types/node": "^13.9.0",
     "@types/yargs": "^15.0.4",
+    "@typescript-eslint/eslint-plugin": "^2.23.0",
+    "@typescript-eslint/parser": "^2.23.0",
     "babel-jest": "^25.1.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
     "fast-glob": "^3.2.2",
     "jest": "^25.1.0",
     "normalize-path": "^3.0.0",
+    "prettier": "^1.19.1",
     "rimraf": "^3.0.2",
     "ts-node": "^8.6.2",
     "typescript": "^3.8.3"

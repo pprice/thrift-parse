@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/camelcase */
+
 import { Lexer as CTLexer, ITokenConfig, TokenType, createToken } from "chevrotain";
 
 const Patterns = {
@@ -7,7 +9,7 @@ const Patterns = {
    * Quirks.
    * 1. Can be enclosed in " OR '
    */
-  StringLiteralPattern: /\"([^\r\n\f\"]*)\"|\'([^\r\n\f\']*)\'/y,
+  StringLiteralPattern: /"([^\r\n\f"]*)"|'([^\r\n\f']*)'/y,
 
   /**
    * Integer constant pattern.
@@ -43,17 +45,15 @@ export class ThriftTokens {
    * This is used used to disambiguate a keyword (e.g. optional) vs an identifer (e.g. optionalThing).
    * @param {ITokenConfig} config Token configuration
    */
-  private createKeywordToken(config: ITokenConfig) {
+  private createKeywordToken(config: ITokenConfig): TokenType {
     if (!this.Identifier) {
       throw new Error("Unable to create keyword token as longer_alt is not defined");
     }
 
-    let token = createToken({
+    return createToken({
       ...config,
       longer_alt: this.Identifier
     });
-
-    return token;
   }
 
   /**
@@ -63,7 +63,7 @@ export class ThriftTokens {
    */
   private validateTokens(tokens: TokenType[]): TokenType[] {
     for (let i = 0; i < tokens.length; i++) {
-      let token = tokens[i];
+      const token = tokens[i];
 
       if (!token) {
         throw new Error(`Undefined token at position ${i}`);
@@ -90,7 +90,7 @@ export class ThriftTokens {
       throw new Error(`Expression ${expression} must be configured to be sticky ('y' flag)`);
     }
 
-    return (text, offset) => {
+    return (text, offset): RegExpExecArrayWithPayload<T> => {
       expression.lastIndex = offset;
       const execResult: RegExpExecArrayWithPayload<T> = expression.exec(text);
       if (execResult !== null) {
@@ -107,13 +107,14 @@ export class ThriftTokens {
     name: "Comment",
     pattern: CTLexer.NA,
     group: CTLexer.SKIPPED,
+    // eslint-disable-next-line @typescript-eslint/camelcase
     line_breaks: true
   });
 
   InlineComment = createToken({
     name: "InlineComment",
     // NOTE: Comments can start with // or #, which is not documented
-    pattern: /(\/\/|\#)[^\r\n]*/,
+    pattern: /(\/\/|#)[^\r\n]*/,
     group: CTLexer.SKIPPED,
     categories: [this.Comment]
   });
@@ -121,7 +122,7 @@ export class ThriftTokens {
   BlockComment = createToken({
     name: "BlockComment",
     pattern: (text, startOffset) => {
-      let started = text[startOffset] === "/" && text[startOffset + 1] === "*";
+      const started = text[startOffset] === "/" && text[startOffset + 1] === "*";
 
       if (!started) {
         return null;

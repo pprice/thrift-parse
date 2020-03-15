@@ -1,4 +1,4 @@
-export function next_index(str: string, char: number, start: number) {
+export function nextIndex(str: string, char: number, start: number): number {
   while (start < str.length) {
     if (str.charCodeAt(start) === char) {
       return start;
@@ -10,7 +10,7 @@ export function next_index(str: string, char: number, start: number) {
   return -1;
 }
 
-export function previous_index(str: string, char: number, start: number) {
+export function previousIndex(str: string, char: number, start: number): number {
   while (start >= 0) {
     if (str.charCodeAt(start) === char) {
       return start;
@@ -22,15 +22,11 @@ export function previous_index(str: string, char: number, start: number) {
   return -1;
 }
 
-export function get_next_previous_index(str: string, char: number, index: number) {
-  return [previous_index(str, char, index), next_index(str, char, index)];
-}
-
-export function previous_indices(str: string, char: number, start: number, max: number = Number.MAX_SAFE_INTEGER): number[] {
+export function previousIndices(str: string, char: number, start: number, max: number = Number.MAX_SAFE_INTEGER): number[] {
   let current = start;
-  let items = [];
+  const items = [];
   while (items.length < max && current >= 0) {
-    current = previous_index(str, char, current);
+    current = previousIndex(str, char, current);
     items.push(current);
     current--;
   }
@@ -38,11 +34,11 @@ export function previous_indices(str: string, char: number, start: number, max: 
   return items;
 }
 
-export function next_indices(str: string, char: number, start: number, max: number = Number.MAX_SAFE_INTEGER): number[] {
+export function nextIndices(str: string, char: number, start: number, max: number = Number.MAX_SAFE_INTEGER): number[] {
   let current = start;
-  let items = [];
+  const items = [];
   while (items.length < max && current >= 0) {
-    current = next_index(str, char, current);
+    current = nextIndex(str, char, current);
     items.push(current);
     current++;
   }

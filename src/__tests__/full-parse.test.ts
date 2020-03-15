@@ -4,7 +4,7 @@ import { ThriftGrammar } from "../grammar";
 import { ThriftLexer } from "../grammar/lexer";
 
 describe("End To End Parsing", () => {
-  let inputs = getThriftAssetsSync();
+  const inputs = getThriftAssetsSync();
 
   test.each(inputs)("should lex %s", async path => {
     const lex = new ThriftLexer();

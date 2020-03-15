@@ -1,7 +1,7 @@
 import * as fs from "fs";
 
 import { ThriftGrammar, buildParseErrors } from "../grammar";
-import { output_grammar_status, output_parse_errors } from "./log";
+import { outputGrammarStatus, outputParseErrors } from "./log";
 
 import { DefaultCliProperties } from ".";
 import chalk from "chalk";
@@ -13,10 +13,10 @@ type CheckProperties = {
   file: string;
 } & DefaultCliProperties;
 
-export async function check({ file, log }: CheckProperties) {
+export async function check({ file, log }: CheckProperties): Promise<void> {
   const matches = await glob(normalize(file), { onlyFiles: true, globstar: true });
 
-  const e2e_time_handle = time();
+  const e2eTimeHandle = time();
 
   for (const match of matches) {
     log();
@@ -26,20 +26,20 @@ export async function check({ file, log }: CheckProperties) {
     const grammar = new ThriftGrammar();
     const result = grammar.parse(content);
 
-    const parse_errors = result.errors.parse;
+    const parseErrors = result.errors.parse;
 
-    if (parse_errors.length > 0) {
-      log(chalk`{cyan ${file}} - {redBright ${parse_errors.length} ${parse_errors.length === 1 ? "error" : "errors"}}`);
+    if (parseErrors.length > 0) {
+      log(chalk`{cyan ${file}} - {redBright ${parseErrors.length} ${parseErrors.length === 1 ? "error" : "errors"}}`);
       log();
-      const detailed_parse_errors = buildParseErrors(content, result.errors.parse);
-      output_parse_errors(detailed_parse_errors, result, log);
+      const detailedParseErrors = buildParseErrors(content, result.errors.parse);
+      outputParseErrors(detailedParseErrors, result, log);
     }
 
-    output_grammar_status(result, log);
+    outputGrammarStatus(result, log);
   }
 
-  const e2e_time = e2e_time_handle().format();
+  const e2eTime = e2eTimeHandle().format();
 
   log();
-  log(`Processed ${matches.length} files in ${e2e_time.value.toFixed(2)} ${e2e_time.unit}`);
+  log(`Processed ${matches.length} files in ${e2eTime.value.toFixed(2)} ${e2eTime.unit}`);
 }

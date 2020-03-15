@@ -1,39 +1,37 @@
 type TimingBlock = () => TimingInfo;
 
+type TimingInfoFormat = {
+  value: number;
+  unitShort: string;
+  unit: string;
+};
+
 export type TimingInfo = {
   name?: string;
   milliseconds: number;
   seconds: number;
   minutes: number;
-  format: () => {
-    value: number;
-    unit_short: string;
-    unit: string;
-  };
+  format: () => TimingInfoFormat;
 };
 
-function createFormatter(
-  minutes: number,
-  seconds: number,
-  milliseconds: number
-): () => { value: number; unit_short: string; unit: string } {
-  return () => {
+function createFormatter(minutes: number, seconds: number, milliseconds: number): () => { value: number; unitShort: string; unit: string } {
+  return (): TimingInfoFormat => {
     if (minutes > 1) {
       return {
         unit: "minutes",
-        unit_short: "m",
+        unitShort: "m",
         value: minutes
       };
     } else if (seconds > 1) {
       return {
         unit: "seconds",
-        unit_short: "s",
+        unitShort: "s",
         value: seconds
       };
     }
     return {
       unit: "milliseconds",
-      unit_short: "ms",
+      unitShort: "ms",
       value: milliseconds
     };
   };
@@ -42,7 +40,7 @@ function createFormatter(
 export function time(name?: string): TimingBlock {
   const start = process.hrtime();
 
-  return () => {
+  return (): TimingInfo => {
     const time = process.hrtime(start);
 
     const nanoseconds = time[0] * 1e9 + time[1];

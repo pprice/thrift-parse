@@ -6,7 +6,7 @@ import { ThriftCstParser } from "./parser";
 
 export type GrammarParseResult = {
   cst?: CstNode;
-  input_name: string;
+  inputName: string;
   errors: {
     lex: ILexingError[];
     parse: IRecognitionException[];
@@ -21,27 +21,25 @@ export class ThriftGrammar {
   public parser: ThriftCstParser = new ThriftCstParser();
   public lexer: ThriftLexer = Lexer;
 
-  constructor() {}
-
-  public parse(text: string, input_name?: string): GrammarParseResult {
-    const lex_time_handle = time();
+  public parse(text: string, inputName?: string): GrammarParseResult {
+    const lexTimeHandle = time();
     const lex = this.lexer.tokenize(text);
-    const lex_time = lex_time_handle();
+    const lexTime = lexTimeHandle();
 
-    const parse_time_handle = time();
+    const parseTimeHandle = time();
     this.parser.input = lex.tokens;
     const cst = this.parser.root();
-    const parse_time = parse_time_handle();
+    const parseTime = parseTimeHandle();
 
     return {
-      input_name,
+      inputName,
       errors: {
         lex: lex.errors,
         parse: this.parser.errors
       },
       performance: {
-        lex: lex_time,
-        parse: parse_time
+        lex: lexTime,
+        parse: parseTime
       },
       cst
     };
