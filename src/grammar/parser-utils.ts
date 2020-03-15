@@ -21,8 +21,24 @@ export type ParseNode = {
   };
 };
 
-export function isInteger(name: TypeName): boolean {
-  return name === "I16" || name === "I32" || name === "I64";
+export function isIntegerAssignable(name: TypeName): boolean {
+  return name === "I16" || name === "I32" || name === "I64" || name === "Double";
+}
+
+export function isStringAssignable(name: TypeName): boolean {
+  return name === "String" || name === "Binary";
+}
+
+export function isDoubleAssignable(name: TypeName): boolean {
+  return name === "Double";
+}
+
+export function isListAssignable(name: TypeName): boolean {
+  return name === "List" || name === "Set";
+}
+
+export function isMapAssignable(name: TypeName): boolean {
+  return name === "Map";
 }
 
 function baseTypeNodeToTypeName(node: ParseNode): BaseTypeName | null {
@@ -46,11 +62,11 @@ function baseTypeNodeToTypeName(node: ParseNode): BaseTypeName | null {
 }
 
 function containerTypeNodeToTypeName(node: ParseNode): ContainerTypeName | null {
-  if (node.children.Map) {
+  if (node.children.MapTypeRule) {
     return "Map";
-  } else if (node.children.Set) {
+  } else if (node.children.SetTypeRule) {
     return "Set";
-  } else if (node.children.List) {
+  } else if (node.children.ListTypeRule) {
     return "List";
   }
 

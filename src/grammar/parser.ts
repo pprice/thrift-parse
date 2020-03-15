@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import { CstParser, TokenType } from "chevrotain";
-import { ParseNode, TypeName, findTypeName, isInteger } from "./parser-utils";
+import {
+  ParseNode,
+  TypeName,
+  findTypeName,
+  isDoubleAssignable,
+  isIntegerAssignable,
+  isListAssignable,
+  isMapAssignable,
+  isStringAssignable
+} from "./parser-utils";
 
 import { Tokens } from "./lexer";
 
@@ -331,12 +340,12 @@ export class ThriftCstParser extends CstParser {
     this.OR({
       DEF: [
         // If the incoming type assignment is known; gate options to be valid (e.g. cant assign a string to an i32)
-        { GATE: () => skipCheck || knownType === "String" || knownType === "Binary", ALT: () => this.CONSUME(Tokens.StringLiteral) },
-        { GATE: () => skipCheck || isInteger(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
-        { GATE: () => skipCheck || isInteger(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntConst) },
-        { GATE: () => skipCheck || knownType === "Double", ALT: () => this.CONSUME(Tokens.DoubleConst) },
-        { GATE: () => skipCheck || knownType === "Map", ALT: () => this.SUBRULE(this.mapConst) },
-        { GATE: () => skipCheck || knownType === "List", ALT: () => this.SUBRULE(this.listConst) },
+        { GATE: () => skipCheck || isStringAssignable(knownType), ALT: () => this.CONSUME(Tokens.StringLiteral) },
+        { GATE: () => skipCheck || isIntegerAssignable(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
+        { GATE: () => skipCheck || isIntegerAssignable(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntConst) },
+        { GATE: () => skipCheck || isDoubleAssignable(knownType), ALT: () => this.CONSUME(Tokens.DoubleConst) },
+        { GATE: () => skipCheck || isMapAssignable(knownType), ALT: () => this.SUBRULE(this.mapConst) },
+        { GATE: () => skipCheck || isListAssignable(knownType), ALT: () => this.SUBRULE(this.listConst) },
         { ALT: () => this.CONSUME(Tokens.Identifier) }
       ],
       ERR_MSG: errorMessage
@@ -391,9 +400,9 @@ export class ThriftCstParser extends CstParser {
 
   private containerType = this.RULE(Rules.ContainerType, () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.mapType, { LABEL: "map" }) },
-      { ALT: () => this.SUBRULE(this.listType, { LABEL: "list" }) },
-      { ALT: () => this.SUBRULE(this.setType, { LABEL: "set" }) }
+      { ALT: () => this.SUBRULE(this.mapType) },
+      { ALT: () => this.SUBRULE(this.listType) },
+      { ALT: () => this.SUBRULE(this.setType) }
     ]);
   });
 
