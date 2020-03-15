@@ -26,6 +26,7 @@
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.0",
     "fast-glob": "^3.2.2",
+    "husky": "^4.2.3",
     "jest": "^25.1.0",
     "normalize-path": "^3.0.0",
     "prettier": "^1.19.1",
@@ -39,5 +40,10 @@
     "chevrotain": "^6.5.0",
     "recast": "^0.18.7",
     "yargs": "^15.3.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pnpm test"
+    }
   }
 }
