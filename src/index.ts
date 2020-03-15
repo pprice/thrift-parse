@@ -6,9 +6,10 @@ async function main(): Promise<void> {
     .command(
       "check <file>",
       "Check parsing behavior for a single input file",
-      yargs => {
-        return yargs.positional("file", { describe: "Input file or glob pattern", type: "string", required: true });
-      },
+      yargs =>
+        yargs
+          .positional("file", { describe: "Input file or glob pattern", type: "string", required: true })
+          .option("print-cst", { type: "boolean", description: "Print CST" }),
       argv => check({ ...argv, log: console.log })
     )
     .demandCommand().argv;
