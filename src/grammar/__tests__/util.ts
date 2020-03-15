@@ -4,7 +4,7 @@ import * as path from "path";
 import glob from "fast-glob";
 import normalize from "normalize-path";
 
-export const TEST_ASSET_PATH = path.join(__dirname, "../../test");
+export const TEST_ASSET_PATH = path.join(__dirname, "../../../test");
 
 function buildGlob(subPath: string): string {
   return normalize(path.join(TEST_ASSET_PATH, subPath));

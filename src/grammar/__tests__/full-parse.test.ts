@@ -1,7 +1,7 @@
 import { getTestAssetContent, getThriftAssetsSync } from "./util";
 
-import { ThriftGrammar } from "../grammar";
-import { ThriftLexer } from "../grammar/lexer";
+import { ThriftGrammar } from "../index";
+import { ThriftLexer } from "../lexer";
 
 describe("End To End Parsing", () => {
   const inputs = getThriftAssetsSync();
