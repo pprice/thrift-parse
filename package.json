@@ -44,8 +44,8 @@
   "husky": {
     "hooks": {
       "pre-push": [
-        "pnpm run lint",
-        "pnpm run test"
+        "lint",
+        "test"
       ]
     }
   }
