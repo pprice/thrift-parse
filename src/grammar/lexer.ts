@@ -36,6 +36,8 @@ type RegExpExecArrayWithPayload<T> = RegExpExecArray & { payload?: T };
 type PayloadParser<T> = (match: string, fullMatch: RegExpExecArray) => T;
 type PatternMatcher<T> = (text: string, offset: number) => RegExpExecArrayWithPayload<T> | null;
 
+export type TokenName = keyof ThriftTokens;
+
 /**
  * Reference: https://thrift.apache.org/docs/idl
  */

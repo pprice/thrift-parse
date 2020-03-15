@@ -1,8 +1,85 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 import { CstParser, TokenType } from "chevrotain";
+import { ParseNode, TypeName, findTypeName, isInteger } from "./parser-utils";
 
 import { Tokens } from "./lexer";
+
+// TODO: typeof Rules without const declaration of value within a type
+// will resolve to string over a set of the named valid rules :-(
+export type TRules = {
+  Root: "RootRule";
+  Header: "HeaderRule";
+  Include: "IncludeRule";
+  Namespace: "NamespaceRule";
+  CPPInclude: "CPPIncludeRule";
+  Definition: "DefinitionRule";
+  FieldId: "FieldIdRule";
+  FieldReq: "FieldReqRule";
+  Field: "FieldRule";
+  Union: "UnionRule";
+  Struct: "StructRule";
+  Exception: "ExceptionRule";
+  SEnum: "SEnumRule";
+  Enum: "EnumRule";
+  EnumValue: "EnumValueRule";
+  TypeDef: "TypeDefRule";
+  Service: "ServiceRule";
+  Function: "FunctionRule";
+  Annotation: "AnnotationRule";
+  Annotations: "AnnotationsRule";
+  ConstValue: "ConstValueRule";
+  CPPType: "CPPTypeRule";
+  ListConst: "ListConstRule";
+  MapConst: "MapConstRule";
+  MapValue: "MapValueRule";
+  BaseType: "BaseTypeRule";
+  ContainerType: "ContainerTypeRule";
+  DefinitionType: "DefinitionTypeRule";
+  Type: "TypeRule";
+  MapType: "MapTypeRule";
+  ListType: "ListTypeRule";
+  SetType: "SetTypeRule";
+  Const: "ConstRule";
+};
+
+const Rules: TRules = {
+  Root: "RootRule",
+  Header: "HeaderRule",
+  Include: "IncludeRule",
+  Namespace: "NamespaceRule",
+  CPPInclude: "CPPIncludeRule",
+  Definition: "DefinitionRule",
+  FieldId: "FieldIdRule",
+  FieldReq: "FieldReqRule",
+  Field: "FieldRule",
+  Union: "UnionRule",
+  Struct: "StructRule",
+  Exception: "ExceptionRule",
+  SEnum: "SEnumRule",
+  Enum: "EnumRule",
+  EnumValue: "EnumValueRule",
+  TypeDef: "TypeDefRule",
+  Service: "ServiceRule",
+  Function: "FunctionRule",
+  Annotation: "AnnotationRule",
+  Annotations: "AnnotationsRule",
+  ConstValue: "ConstValueRule",
+  CPPType: "CPPTypeRule",
+  ListConst: "ListConstRule",
+  MapConst: "MapConstRule",
+  MapValue: "MapValueRule",
+  BaseType: "BaseTypeRule",
+  ContainerType: "ContainerTypeRule",
+  DefinitionType: "DefinitionTypeRule",
+  Type: "TypeRule",
+  MapType: "MapTypeRule",
+  ListType: "ListTypeRule",
+  SetType: "SetTypeRule",
+  Const: "ConstRule"
+};
+
+export type RuleName = TRules[keyof TRules];
 
 /**
  * Reference: https://thrift.apache.org/docs/idl
@@ -20,7 +97,7 @@ export class ThriftCstParser extends CstParser {
    * @param name Rule name
    * @param keywordToken Keyword token
    */
-  private createKeywordFieldConsumer(name: string, keywordToken: TokenType) {
+  private createKeywordFieldConsumer(name: RuleName, keywordToken: TokenType) {
     /**
      * [Keyword] [Identifier]
      * "{"
@@ -40,7 +117,7 @@ export class ThriftCstParser extends CstParser {
   /**
    * Root CST node rule
    */
-  public root = this.RULE("root", () => {
+  public root = this.RULE(Rules.Root, () => {
     // "Every Thrift document contains 0 or more headers followed by 0 or more definitions."
     this.MANY1(() => {
       this.SUBRULE1(this.header, { LABEL: "header" });
@@ -54,7 +131,7 @@ export class ThriftCstParser extends CstParser {
   /**
    * HEADER (Include | CPPInclude | Namespace)
    */
-  private header = this.RULE("header", () => {
+  private header = this.RULE(Rules.Header, () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.include, { LABEL: "include" }) },
       { ALT: () => this.SUBRULE(this.cppInclude, { LABEL: "cpp_include" }) },
@@ -62,12 +139,12 @@ export class ThriftCstParser extends CstParser {
     ]);
   });
 
-  private include = this.RULE("include", () => {
+  private include = this.RULE(Rules.Include, () => {
     this.CONSUME(Tokens.Include);
     this.CONSUME(Tokens.StringLiteral, { LABEL: "source" });
   });
 
-  private namespace = this.RULE("namespace", () => {
+  private namespace = this.RULE(Rules.Namespace, () => {
     this.CONSUME(Tokens.Namespace);
     this.OR([
       { ALT: () => this.CONSUME1(Tokens.Identifier, { LABEL: "scope" }) },
@@ -77,7 +154,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
-  private cppInclude = this.RULE("cpp_include", () => {
+  private cppInclude = this.RULE(Rules.CPPInclude, () => {
     this.CONSUME(Tokens.CPPInclude);
     this.CONSUME(Tokens.StringLiteral, { LABEL: "source" });
   });
@@ -85,7 +162,7 @@ export class ThriftCstParser extends CstParser {
   /**
    * DEFINITION (Const | TypeDef | Enum | Struct | Union | Exception | Service)
    */
-  private definition = this.RULE("definition", () => {
+  private definition = this.RULE(Rules.Definition, () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.constDefinition, { LABEL: "const" }) },
       { ALT: () => this.SUBRULE(this.typedef, { LABEL: "typedef" }) },
@@ -98,40 +175,40 @@ export class ThriftCstParser extends CstParser {
     ]);
   });
 
-  private fieldId = this.RULE("fieldId", () => {
+  private fieldId = this.RULE(Rules.FieldId, () => {
     this.CONSUME(Tokens.IntConst, { LABEL: "id" });
     this.CONSUME(Tokens.Colon);
   });
 
-  private fieldReq = this.RULE("fieldReq", () => {
+  private fieldReq = this.RULE(Rules.FieldReq, () => {
     this.OR([{ ALT: () => this.CONSUME(Tokens.Optional) }, { ALT: () => this.CONSUME(Tokens.Required) }]);
   });
 
-  private field = this.RULE("field", () => {
+  private field = this.RULE(Rules.Field, () => {
     /**
      * ([integer]":") ("optional"|"required") [Type] [Identifier] ("=" [Const])
      */
 
     this.OPTION1(() => this.SUBRULE(this.fieldId, { LABEL: "id" }));
     this.OPTION2(() => this.SUBRULE(this.fieldReq, { LABEL: "req" }));
-    this.SUBRULE1(this.type, { LABEL: "type" });
+    const type = findTypeName(this.SUBRULE1(this.type) as ParseNode);
 
     this.OPTION3(() => this.CONSUME(Tokens.Ampersand, { LABEL: "reference" }));
 
     this.CONSUME1(Tokens.Identifier, { LABEL: "identifier" });
     this.OPTION4(() => {
       this.CONSUME3(Tokens.Assignment);
-      this.SUBRULE3(this.constValue, { LABEL: "value" });
+      this.SUBRULE3(this.constValue, { ARGS: [type, "field"] });
     });
     this.OPTION5(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
     this.OPTION6(() => this.CONSUME(Tokens.ListSeparator));
   });
 
-  private union = this.createKeywordFieldConsumer("union", Tokens.Union);
-  private struct = this.createKeywordFieldConsumer("struct", Tokens.Struct);
-  private exception = this.createKeywordFieldConsumer("exception", Tokens.Exception);
+  private union = this.createKeywordFieldConsumer(Rules.Union, Tokens.Union);
+  private struct = this.createKeywordFieldConsumer(Rules.Struct, Tokens.Struct);
+  private exception = this.createKeywordFieldConsumer(Rules.Exception, Tokens.Exception);
 
-  private senum = this.RULE("senum", () => {
+  private senum = this.RULE(Rules.SEnum, () => {
     this.CONSUME(Tokens.SEnum);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.CONSUME(Tokens.LCurly);
@@ -147,7 +224,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION2(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
-  private enum = this.RULE("enum", () => {
+  private enum = this.RULE(Rules.Enum, () => {
     // NOTE: Enums are different from other field keyword consumers, they do not
     // have field ids, and assignments can only be int or hex constants
     this.CONSUME(Tokens.Enum);
@@ -169,7 +246,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION2(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
-  private enumValue = this.RULE("enumValue", () => {
+  private enumValue = this.RULE(Rules.EnumValue, () => {
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.OPTION(() => {
       this.CONSUME(Tokens.Assignment);
@@ -189,7 +266,7 @@ export class ThriftCstParser extends CstParser {
     });
   });
 
-  private typedef = this.RULE("typedef", () => {
+  private typedef = this.RULE(Rules.TypeDef, () => {
     this.CONSUME(Tokens.Typedef);
     this.SUBRULE(this.type, { LABEL: "type" });
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
@@ -197,7 +274,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION2(() => this.CONSUME(Tokens.ListSeparator));
   });
 
-  private service = this.RULE("service", () => {
+  private service = this.RULE(Rules.Service, () => {
     this.CONSUME(Tokens.Service);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.OPTION2(() => {
@@ -210,7 +287,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION3(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
-  private functionDeclaration = this.RULE("function", () => {
+  private functionDeclaration = this.RULE(Rules.Function, () => {
     this.OPTION1(() => this.CONSUME(Tokens.OneWay, { LABEL: "oneway" }));
     this.OR([{ ALT: () => this.SUBRULE(this.type) }, { ALT: () => this.CONSUME(Tokens.Void) }]);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
@@ -228,7 +305,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION4(() => this.CONSUME(Tokens.ListSeparator));
   });
 
-  private annotation = this.RULE("annotation", () => {
+  private annotation = this.RULE(Rules.Annotation, () => {
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
 
     this.OPTION(() => {
@@ -239,7 +316,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION2(() => this.CONSUME(Tokens.Comma));
   });
 
-  private annotations = this.RULE("annotations", () => {
+  private annotations = this.RULE(Rules.Annotations, () => {
     this.CONSUME(Tokens.LParen);
 
     this.MANY(() => this.SUBRULE(this.annotation, { LABEL: "annotation" }));
@@ -247,24 +324,31 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RParen);
   });
 
-  private constValue = this.RULE("constValue", () => {
-    this.OR([
-      { ALT: () => this.CONSUME(Tokens.StringLiteral, { LABEL: "string" }) },
-      { ALT: () => this.CONSUME(Tokens.HexConst, { LABEL: "hex" }) },
-      { ALT: () => this.CONSUME(Tokens.IntConst, { LABEL: "int" }) },
-      { ALT: () => this.CONSUME(Tokens.DoubleConst, { LABEL: "double" }) },
-      { ALT: () => this.CONSUME(Tokens.Identifier, { LABEL: "id" }) },
-      { ALT: () => this.SUBRULE(this.mapConst, { LABEL: "map_const" }) },
-      { ALT: () => this.SUBRULE(this.listConst, { LABEL: "list_const" }) }
-    ]);
+  private constValue = this.RULE(Rules.ConstValue, (knownType: TypeName) => {
+    const errorMessage = knownType ? `Constant ${knownType} or Identifier` : "";
+    const skipCheck = !knownType || knownType === "Identifier";
+
+    this.OR({
+      DEF: [
+        // If the incoming type assignment is known; gate options to be valid (e.g. cant assign a string to an i32)
+        { GATE: () => skipCheck || knownType === "String" || knownType === "Binary", ALT: () => this.CONSUME(Tokens.StringLiteral) },
+        { GATE: () => skipCheck || isInteger(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
+        { GATE: () => skipCheck || isInteger(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntConst) },
+        { GATE: () => skipCheck || knownType === "Double", ALT: () => this.CONSUME(Tokens.DoubleConst) },
+        { GATE: () => skipCheck || knownType === "Map", ALT: () => this.SUBRULE(this.mapConst) },
+        { GATE: () => skipCheck || knownType === "List", ALT: () => this.SUBRULE(this.listConst) },
+        { ALT: () => this.CONSUME(Tokens.Identifier) }
+      ],
+      ERR_MSG: errorMessage
+    });
   });
 
-  private cppType = this.RULE("cpp_type", () => {
+  private cppType = this.RULE(Rules.CPPType, () => {
     this.CONSUME(Tokens.CPPType);
     this.CONSUME(Tokens.StringLiteral);
   });
 
-  private listConst = this.RULE("listConst", () => {
+  private listConst = this.RULE(Rules.ListConst, () => {
     this.CONSUME(Tokens.LBracket);
     this.MANY_SEP({
       SEP: Tokens.Comma,
@@ -273,7 +357,7 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RBracket);
   });
 
-  private mapConst = this.RULE("mapConst", () => {
+  private mapConst = this.RULE(Rules.MapConst, () => {
     this.CONSUME(Tokens.LCurly);
 
     this.MANY(() => this.SUBRULE(this.mapValue, { LABEL: "values" }));
@@ -284,7 +368,7 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RCurly);
   });
 
-  private mapValue = this.RULE("mapValue", () => {
+  private mapValue = this.RULE(Rules.MapValue, () => {
     // Map rule is also used for const struct definitions, will need to split this out
     this.SUBRULE1(this.constValue, { LABEL: "key" });
     this.CONSUME(Tokens.Colon);
@@ -292,7 +376,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION(() => this.CONSUME(Tokens.ListSeparator));
   });
 
-  private baseType = this.RULE("base_type", () => {
+  private baseType = this.RULE(Rules.BaseType, () => {
     this.OR([
       { ALT: () => this.CONSUME(Tokens.I16) },
       { ALT: () => this.CONSUME(Tokens.I32) },
@@ -305,7 +389,7 @@ export class ThriftCstParser extends CstParser {
     ]);
   });
 
-  private containerType = this.RULE("container_type", () => {
+  private containerType = this.RULE(Rules.ContainerType, () => {
     this.OR([
       { ALT: () => this.SUBRULE(this.mapType, { LABEL: "map" }) },
       { ALT: () => this.SUBRULE(this.listType, { LABEL: "list" }) },
@@ -313,22 +397,16 @@ export class ThriftCstParser extends CstParser {
     ]);
   });
 
-  private definitionType = this.RULE("definition_type", () => {
-    this.OR([
-      { ALT: () => this.SUBRULE(this.baseType, { LABEL: "base_type" }) },
-      { ALT: () => this.SUBRULE(this.containerType, { LABEL: "container_type" }) }
-    ]);
-    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+  private definitionType = this.RULE(Rules.DefinitionType, () => {
+    this.OR([{ ALT: () => this.SUBRULE(this.baseType) }, { ALT: () => this.SUBRULE(this.containerType) }]);
+    this.OPTION(() => this.SUBRULE(this.annotations));
   });
 
-  private type = this.RULE("type", () => {
-    this.OR([
-      { ALT: () => this.SUBRULE(this.definitionType, { LABEL: "definition_type" }) },
-      { ALT: () => this.CONSUME(Tokens.Identifier, { LABEL: "identifier_type" }) }
-    ]);
+  private type = this.RULE(Rules.Type, () => {
+    this.OR([{ ALT: () => this.SUBRULE(this.definitionType) }, { ALT: () => this.CONSUME(Tokens.Identifier) }]);
   });
 
-  private mapType = this.RULE("map", () => {
+  private mapType = this.RULE(Rules.MapType, () => {
     this.CONSUME(Tokens.Map);
     this.OPTION(() => this.SUBRULE(this.cppType, { LABEL: "cpp_type" }));
     this.CONSUME(Tokens.LTemplate);
@@ -338,7 +416,7 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RTemplate);
   });
 
-  private listType = this.RULE("list", () => {
+  private listType = this.RULE(Rules.ListType, () => {
     this.CONSUME(Tokens.List);
     this.CONSUME(Tokens.LTemplate);
     this.SUBRULE(this.type, { LABEL: "value_type" });
@@ -346,7 +424,7 @@ export class ThriftCstParser extends CstParser {
     this.OPTION(() => this.SUBRULE(this.cppType));
   });
 
-  private setType = this.RULE("set", () => {
+  private setType = this.RULE(Rules.SetType, () => {
     this.CONSUME(Tokens.Set);
     this.OPTION(() => this.SUBRULE(this.cppType));
     this.CONSUME(Tokens.LTemplate);
@@ -354,12 +432,12 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RTemplate);
   });
 
-  private constDefinition = this.RULE("const", () => {
+  private constDefinition = this.RULE(Rules.Const, () => {
     this.CONSUME(Tokens.Const);
-    this.SUBRULE(this.type, { LABEL: "value_type" });
+    const type = findTypeName(this.SUBRULE(this.type, { LABEL: "value_type" }) as ParseNode);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.CONSUME(Tokens.Assignment);
-    this.SUBRULE(this.constValue, { LABEL: "value" });
+    this.SUBRULE(this.constValue, { LABEL: "value", ARGS: [type, "const"] });
 
     // It is possible to have a semi-colon at the end of a const statement;
     // just consume it and move forward
