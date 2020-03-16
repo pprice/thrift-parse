@@ -2,7 +2,6 @@
 
 import { CstParser, TokenType } from "chevrotain";
 import {
-  ParseNode,
   TypeName,
   findTypeName,
   isDoubleAssignable,
@@ -10,8 +9,9 @@ import {
   isListAssignable,
   isMapAssignable,
   isStringAssignable
-} from "./parser-utils";
+} from "./helpers/thrift-types";
 
+import { ParseNode } from "./helpers";
 import { Tokens } from "./lexer";
 
 // TODO: typeof Rules without const declaration of value within a type

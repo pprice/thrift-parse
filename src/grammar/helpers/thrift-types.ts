@@ -1,25 +1,11 @@
-import { Extends } from "../lib/type";
-import { IToken } from "chevrotain";
-import { RuleName } from "./parser";
-import { TokenName } from "./lexer";
-import { TokenType } from "./visitors/types";
+import { ParseNode, TokenName } from "./types";
+
+import { Extends } from "../../lib/type";
 
 export type BaseTypeName = Extends<TokenName, "I16" | "I32" | "I64" | "Double" | "Byte" | "Binary" | "Bool" | "String">;
 export type ContainerTypeName = Extends<TokenName, "Map" | "Set" | "List">;
 export type IdentifierTypeName = Extends<TokenName, "Identifier">;
 export type TypeName = BaseTypeName | ContainerTypeName | IdentifierTypeName;
-
-type RuleChildren = { [key in RuleName]?: ParseNode[] };
-type TokenChildren = { [key in TokenName]?: IToken[] };
-type NodeChildren = RuleChildren & TokenChildren;
-
-export type ParseNode = {
-  name?: RuleName;
-  children?: NodeChildren;
-  tokenType?: TokenType & {
-    name: TokenName;
-  };
-};
 
 export function isIntegerAssignable(name: TypeName): boolean {
   return name === "I16" || name === "I32" || name === "I64" || name === "Double";
