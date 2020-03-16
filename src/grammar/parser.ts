@@ -50,6 +50,8 @@ export type TRules = {
   ListType: "ListTypeRule";
   SetType: "SetTypeRule";
   Const: "ConstRule";
+  Comments: "CommentsRule";
+  PostComments: "PostCommentsRule";
 };
 
 const Rules: TRules = {
@@ -85,7 +87,9 @@ const Rules: TRules = {
   MapType: "MapTypeRule",
   ListType: "ListTypeRule",
   SetType: "SetTypeRule",
-  Const: "ConstRule"
+  Const: "ConstRule",
+  Comments: "CommentsRule",
+  PostComments: "PostCommentsRule"
 };
 
 export type RuleName = TRules[keyof TRules];
@@ -127,6 +131,8 @@ export class ThriftCstParser extends CstParser {
    * Root CST node rule
    */
   public root = this.RULE(Rules.Root, () => {
+    this.SUBRULE(this.comments);
+
     // "Every Thrift document contains 0 or more headers followed by 0 or more definitions."
     this.MANY1(() => {
       this.SUBRULE1(this.header, { LABEL: "header" });
@@ -135,17 +141,32 @@ export class ThriftCstParser extends CstParser {
     this.MANY2(() => {
       this.SUBRULE2(this.definition, { LABEL: "definition" });
     });
+
+    this.SUBRULE2(this.comments, { LABEL: Rules.PostComments });
+  });
+
+  private comments = this.RULE(Rules.Comments, (allowSingleLine = true) => {
+    this.MANY(() => {
+      this.OR([
+        { ALT: () => this.CONSUME(Tokens.DocComment) },
+        { ALT: () => this.CONSUME(Tokens.BlockComment) },
+        { GATE: () => allowSingleLine, ALT: () => this.CONSUME(Tokens.SingleLineComment) }
+      ]);
+    });
   });
 
   /**
    * HEADER (Include | CPPInclude | Namespace)
    */
   private header = this.RULE(Rules.Header, () => {
-    this.OR([
-      { ALT: () => this.SUBRULE(this.include, { LABEL: "include" }) },
-      { ALT: () => this.SUBRULE(this.cppInclude, { LABEL: "cpp_include" }) },
-      { ALT: () => this.SUBRULE(this.namespace, { LABEL: "namespace" }) }
-    ]);
+    this.OPTION(() => this.SUBRULE(this.comments));
+    this.OPTION2(() =>
+      this.OR([
+        { ALT: () => this.SUBRULE(this.include, { LABEL: "include" }) },
+        { ALT: () => this.SUBRULE(this.cppInclude, { LABEL: "cpp_include" }) },
+        { ALT: () => this.SUBRULE(this.namespace, { LABEL: "namespace" }) }
+      ])
+    );
   });
 
   private include = this.RULE(Rules.Include, () => {
@@ -172,6 +193,7 @@ export class ThriftCstParser extends CstParser {
    * DEFINITION (Const | TypeDef | Enum | Struct | Union | Exception | Service)
    */
   private definition = this.RULE(Rules.Definition, () => {
+    this.SUBRULE(this.comments);
     this.OR([
       { ALT: () => this.SUBRULE(this.constDefinition, { LABEL: "const" }) },
       { ALT: () => this.SUBRULE(this.typedef, { LABEL: "typedef" }) },
@@ -185,11 +207,13 @@ export class ThriftCstParser extends CstParser {
   });
 
   private fieldId = this.RULE(Rules.FieldId, () => {
+    this.SUBRULE(this.comments, { ARGS: [false] });
     this.CONSUME(Tokens.IntConst, { LABEL: "id" });
     this.CONSUME(Tokens.Colon);
   });
 
   private fieldReq = this.RULE(Rules.FieldReq, () => {
+    this.SUBRULE(this.comments, { ARGS: [false] });
     this.OR([{ ALT: () => this.CONSUME(Tokens.Optional) }, { ALT: () => this.CONSUME(Tokens.Required) }]);
   });
 
@@ -197,20 +221,22 @@ export class ThriftCstParser extends CstParser {
     /**
      * ([integer]":") ("optional"|"required") [Type] [Identifier] ("=" [Const])
      */
+    this.SUBRULE(this.comments);
+    this.OPTION(() => {
+      this.OPTION1(() => this.SUBRULE(this.fieldId, { LABEL: "id" }));
+      this.OPTION2(() => this.SUBRULE(this.fieldReq, { LABEL: "req" }));
+      const type = findTypeName(this.SUBRULE1(this.type) as ParseNode);
 
-    this.OPTION1(() => this.SUBRULE(this.fieldId, { LABEL: "id" }));
-    this.OPTION2(() => this.SUBRULE(this.fieldReq, { LABEL: "req" }));
-    const type = findTypeName(this.SUBRULE1(this.type) as ParseNode);
+      this.OPTION3(() => this.CONSUME(Tokens.Ampersand, { LABEL: "reference" }));
 
-    this.OPTION3(() => this.CONSUME(Tokens.Ampersand, { LABEL: "reference" }));
-
-    this.CONSUME1(Tokens.Identifier, { LABEL: "identifier" });
-    this.OPTION4(() => {
-      this.CONSUME3(Tokens.Assignment);
-      this.SUBRULE3(this.constValue, { ARGS: [type, "field"] });
+      this.CONSUME1(Tokens.Identifier, { LABEL: "identifier" });
+      this.OPTION4(() => {
+        this.CONSUME3(Tokens.Assignment);
+        this.SUBRULE3(this.constValue, { ARGS: [type, "field"] });
+      });
+      this.OPTION5(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+      this.OPTION6(() => this.CONSUME(Tokens.ListSeparator));
     });
-    this.OPTION5(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
-    this.OPTION6(() => this.CONSUME(Tokens.ListSeparator));
   });
 
   private union = this.createKeywordFieldConsumer(Rules.Union, Tokens.Union);
@@ -249,13 +275,15 @@ export class ThriftCstParser extends CstParser {
 
     // There could be a trailing list separator
     this.OPTION(() => this.CONSUME2(Tokens.ListSeparator));
+    this.OPTION2(() => this.SUBRULE(this.comments));
     this.CONSUME(Tokens.RCurly);
 
     // Enum post annotations
-    this.OPTION2(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OPTION3(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
   });
 
   private enumValue = this.RULE(Rules.EnumValue, () => {
+    this.SUBRULE(this.comments);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
     this.OPTION(() => {
       this.CONSUME(Tokens.Assignment);
@@ -297,6 +325,7 @@ export class ThriftCstParser extends CstParser {
   });
 
   private functionDeclaration = this.RULE(Rules.Function, () => {
+    this.SUBRULE(this.comments);
     this.OPTION1(() => this.CONSUME(Tokens.OneWay, { LABEL: "oneway" }));
     this.OR([{ ALT: () => this.SUBRULE(this.type) }, { ALT: () => this.CONSUME(Tokens.Void) }]);
     this.CONSUME(Tokens.Identifier, { LABEL: "id" });
@@ -312,6 +341,7 @@ export class ThriftCstParser extends CstParser {
     });
     this.OPTION3(() => this.SUBRULE(this.annotations));
     this.OPTION4(() => this.CONSUME(Tokens.ListSeparator));
+    this.SUBRULE2(this.comments);
   });
 
   private annotation = this.RULE(Rules.Annotation, () => {
@@ -378,11 +408,15 @@ export class ThriftCstParser extends CstParser {
   });
 
   private mapValue = this.RULE(Rules.MapValue, () => {
-    // Map rule is also used for const struct definitions, will need to split this out
-    this.SUBRULE1(this.constValue, { LABEL: "key" });
-    this.CONSUME(Tokens.Colon);
-    this.SUBRULE2(this.constValue, { LABEL: "value" });
-    this.OPTION(() => this.CONSUME(Tokens.ListSeparator));
+    this.SUBRULE1(this.comments);
+
+    this.OPTION1(() => {
+      // Map rule is also used for const struct definitions, will need to split this out
+      this.SUBRULE2(this.constValue, { LABEL: "key" });
+      this.CONSUME(Tokens.Colon);
+      this.SUBRULE3(this.constValue, { LABEL: "value" });
+      this.OPTION2(() => this.CONSUME(Tokens.ListSeparator));
+    });
   });
 
   private baseType = this.RULE(Rules.BaseType, () => {
@@ -412,6 +446,7 @@ export class ThriftCstParser extends CstParser {
   });
 
   private type = this.RULE(Rules.Type, () => {
+    this.SUBRULE(this.comments, { ARGS: [false] });
     this.OR([{ ALT: () => this.SUBRULE(this.definitionType) }, { ALT: () => this.CONSUME(Tokens.Identifier) }]);
   });
 

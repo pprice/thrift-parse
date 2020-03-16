@@ -105,43 +105,23 @@ export class ThriftTokens {
     };
   }
 
-  Comment = createToken({
-    name: "Comment",
-    pattern: CTLexer.NA,
-    group: CTLexer.SKIPPED,
-    line_breaks: true
+  SingleLineComment = createToken({
+    name: "SingleLineComment",
+    // NOTE: Comments can start with // or #, which is not documented
+    pattern: /(\/\/|#)[^\r\n]*/
   });
 
-  InlineComment = createToken({
-    name: "InlineComment",
-    // NOTE: Comments can start with // or #, which is not documented
-    pattern: /(\/\/|#)[^\r\n]*/,
-    group: CTLexer.SKIPPED,
-    categories: [this.Comment]
+  DocComment = createToken({
+    name: "DocComment",
+    pattern: /\/\*\*[^]*?\*\//,
+    line_breaks: true
   });
 
   BlockComment = createToken({
     name: "BlockComment",
-    pattern: (text, startOffset) => {
-      const started = text[startOffset] === "/" && text[startOffset + 1] === "*";
-
-      if (!started) {
-        return null;
-      }
-
-      let endOffset = startOffset + 2;
-      // Find the next */ pair
-      endOffset = text.indexOf("*/", endOffset);
-
-      if (endOffset === -1) {
-        return null;
-      }
-
-      return [text.substring(startOffset, endOffset + 2)];
-    },
-    line_breaks: true,
-    group: CTLexer.SKIPPED,
-    categories: [this.Comment]
+    pattern: /\/\*[^]*?\*\//,
+    longer_alt: this.DocComment,
+    line_breaks: true
   });
 
   Whitespace = createToken({
@@ -436,9 +416,11 @@ export class ThriftTokens {
   Order = this.validateTokens([
     // Trivia
     this.Whitespace,
-    this.InlineComment,
+    // Comments
+    this.DocComment,
     this.BlockComment,
-    this.Comment,
+    this.SingleLineComment,
+    // Trivia
     this.LineTerminator,
     // Structure
     this.Assignment,
