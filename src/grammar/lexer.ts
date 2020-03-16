@@ -125,7 +125,8 @@ export class ThriftTokens {
   SingleLineComment = createToken({
     name: "SingleLineComment",
     // NOTE: Comments can start with // or #, which is not documented
-    pattern: this.makeRegexPayloadMatcher(Patterns.SingleLineCommentPattern, match => match.substring(1, match.length - 1))
+    pattern: this.makeRegexPayloadMatcher(Patterns.SingleLineCommentPattern, (match, groups) => match.substring(groups[1].length)),
+    line_breaks: false
   });
 
   DocComment = createToken({
