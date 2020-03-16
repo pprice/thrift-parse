@@ -1,4 +1,4 @@
-import { ILexingError, IRecognitionException, IToken } from "chevrotain";
+import { IRecognitionException, IToken } from "chevrotain";
 import { nextIndex, nextIndices, previousCount, previousIndex, previousIndices } from "./string-utils";
 
 const NEW_LINE = "\n".charCodeAt(0);
