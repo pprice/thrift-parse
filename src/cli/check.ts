@@ -19,6 +19,8 @@ export async function check(options: CheckOptions): Promise<void> {
   const matches = await glob(normalize(options.file), { onlyFiles: true, globstar: true });
 
   const e2eTimeHandle = time();
+  let passed = 0;
+  let failed = 0;
 
   for (const match of matches) {
     log();
@@ -28,13 +30,17 @@ export async function check(options: CheckOptions): Promise<void> {
     const grammar = new ThriftGrammar();
     const result = grammar.parse(content);
 
+    if (result.errors.lex.length > 0 || result.errors.parse.length > 0) {
+      failed++;
+    } else {
+      passed++;
+    }
+
     const parseErrors = result.errors.parse;
 
     if (parseErrors.length > 0) {
-      log(chalk`{cyan ${options.file}} - {redBright ${parseErrors.length} ${parseErrors.length === 1 ? "error" : "errors"}}`);
-      log();
       const detailedParseErrors = buildParseErrors(content, result.errors.parse);
-      outputParseErrors(detailedParseErrors, result, log);
+      outputParseErrors(match, detailedParseErrors, result, log);
     }
 
     outputGrammarStatus(result, log);
@@ -49,4 +55,5 @@ export async function check(options: CheckOptions): Promise<void> {
 
   log();
   log(`Processed ${matches.length} files in ${e2eTime.value.toFixed(2)} ${e2eTime.unit}`);
+  log(`${passed} succeeded, ${failed} failed`);
 }

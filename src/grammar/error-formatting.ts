@@ -1,5 +1,5 @@
-import { IRecognitionException, IToken } from "chevrotain";
-import { nextIndex, nextIndices, previousIndex, previousIndices } from "./string-utils";
+import { ILexingError, IRecognitionException, IToken } from "chevrotain";
+import { nextIndex, nextIndices, previousCount, previousIndex, previousIndices } from "./string-utils";
 
 const NEW_LINE = "\n".charCodeAt(0);
 
@@ -17,6 +17,7 @@ export type ParseError = {
   followingLines: string[];
   originLine: string;
   fragment: {
+    line: number;
     text: string;
     lineStart: number;
     lineEnd: number;
@@ -30,7 +31,7 @@ const DefaultParseErrorFormatterOptions: ParseErrorOptions = {
   windowLines: 3
 };
 
-function extract(origin: string, exception: IRecognitionException, formatOptions?: ParseErrorOptions): ParseError {
+function extractParseError(origin: string, exception: IRecognitionException, formatOptions?: ParseErrorOptions): ParseError {
   formatOptions = { ...DefaultParseErrorFormatterOptions, ...formatOptions };
 
   // NOTE: Line numbers from chevrotain are unreliable, manually build out
@@ -43,6 +44,8 @@ function extract(origin: string, exception: IRecognitionException, formatOptions
   let leftExtent = previousIndex(origin, NEW_LINE, current);
   let rightExtent = nextIndex(origin, NEW_LINE, current);
 
+  // NOTE: Line numbers are 1 based
+  const originLineNumber = previousCount(origin, NEW_LINE, current) + 1;
   const originLine = origin.substring(leftExtent + 1, rightExtent);
 
   // Adjust token ranges to be relative to origin_line
@@ -74,6 +77,7 @@ function extract(origin: string, exception: IRecognitionException, formatOptions
     followingLines: followingLines,
     originLine: originLine,
     fragment: {
+      line: originLineNumber,
       text: errorFragment,
       lineStart: fragmentStart,
       lineEnd: fragmentEnd,
@@ -87,5 +91,5 @@ function extract(origin: string, exception: IRecognitionException, formatOptions
 }
 
 export function buildParseErrors(origin: string, errors: IRecognitionException[]): ParseError[] {
-  return errors.map(e => extract(origin, e));
+  return errors.map(e => extractParseError(origin, e));
 }

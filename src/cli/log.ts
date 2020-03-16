@@ -21,22 +21,38 @@ export function outputGrammarStatus(result: GrammarParseResult, log: LogMessage)
   log(`${stageMessage("Parse ", result.errors.parse, result.performance.parse)}`);
 }
 
-export function outputParseError(error: ParseError, result: GrammarParseResult, log: LogMessage): void {
-  log(chalk`{redBright.bold Error:} {red ${error.exception.name}} - ${error.exception.message}`);
+export function outputParseError(file: string, error: ParseError, result: GrammarParseResult, log: LogMessage): void {
+  log(
+    chalk`{cyan ${file}}{yellow :${error.fragment.line}:${error.fragment.lineStart || 0}} - {redBright.bold Error:} {red ${
+      error.exception.name
+    }} - ${error.exception.message}`
+  );
+  log();
   const prefix = chalk`{gray |}`;
   log(chalk`${prefix} {yellow Code:}`);
-  error.priorLines.forEach(line => {
-    log(chalk`${prefix}   {white ${line}}`);
+
+  const maxLineLength = (error.fragment.line + error.followingLines.length).toString().length;
+
+  const makeLineNumber = (number: number): string => {
+    return number.toString().padEnd(maxLineLength, " ");
+  };
+
+  error.priorLines.forEach((line, idx) => {
+    const lineNumber = error.fragment.line - error.priorLines.length + idx;
+    log(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
   });
 
-  log(chalk`${prefix}   {whiteBright.bold ${error.originLine}}`);
+  log(chalk`${prefix} {gray ${makeLineNumber(error.fragment.line)}}  {whiteBright.bold ${error.originLine}}`);
   const indent = " ".repeat(error.fragment.lineStart);
   const highlight = "^".repeat(error.fragment.length);
-  log(chalk`${prefix}   ${indent}{redBright.bold ${highlight}} {red ⟵  ${error.exception.name}}`);
+  log(chalk`${prefix} ${" ".repeat(maxLineLength)}  ${indent}{redBright.bold ${highlight}} {red ⟵  ${error.exception.name}}`);
 
-  error.followingLines.forEach(line => {
-    log(chalk`${prefix}   {white ${line}}`);
+  error.followingLines.forEach((line, idx) => {
+    const lineNumber = error.fragment.line + idx + 1;
+    log(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
   });
+
+  log(prefix);
 
   if (error.exception?.context?.ruleStack.length > 0) {
     log(prefix);
@@ -59,9 +75,9 @@ export function outputParseError(error: ParseError, result: GrammarParseResult, 
   }
 }
 
-export function outputParseErrors(errors: ParseError[], result: GrammarParseResult, log: LogMessage): void {
+export function outputParseErrors(file: string, errors: ParseError[], result: GrammarParseResult, log: LogMessage): void {
   errors.forEach(e => {
-    outputParseError(e, result, log);
+    outputParseError(file, e, result, log);
     log();
   });
 }

@@ -10,6 +10,17 @@ export function nextIndex(str: string, char: number, start: number): number {
   return -1;
 }
 
+export function nextCount(str: string, char: number, start: number): number {
+  let count = 0;
+  while (start++ < str.length) {
+    if (str.charCodeAt(start) === char) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
 export function previousIndex(str: string, char: number, start: number): number {
   while (start >= 0) {
     if (str.charCodeAt(start) === char) {
@@ -20,6 +31,18 @@ export function previousIndex(str: string, char: number, start: number): number 
   }
 
   return -1;
+}
+
+export function previousCount(str: string, char: number, start: number): number {
+  let count = 0;
+
+  while (start-- >= 0) {
+    if (str.charCodeAt(start) === char) {
+      count++;
+    }
+  }
+
+  return count;
 }
 
 export function previousIndices(str: string, char: number, start: number, max: number = Number.MAX_SAFE_INTEGER): number[] {
