@@ -15,6 +15,7 @@ const Patterns = {
    * Integer constant pattern.
    */
   IntConstPattern: /[-+]?\d+([eE]\d+)?/y,
+
   /**
    * Hex constant pattern.
    *
@@ -22,6 +23,7 @@ const Patterns = {
    * 1. Thrift hexadecimal constants can have a leading sign (-+)
    */
   HexConstPattern: /[-+]?0x[A-Fa-f0-9]+/y,
+
   /**
    * Double constant pattern.
    *
@@ -29,7 +31,22 @@ const Patterns = {
    * 1. Thrift doubles can have any number of leading 0s
    * 2.
    */
-  DoubleConstPattern: /[-+]?([0-9]\d*)\.\d+([eE][+-]?\d+)?/y
+  DoubleConstPattern: /[-+]?([0-9]\d*)\.\d+([eE][+-]?\d+)?/y,
+
+  /**
+   * Single line comments
+   */
+  SingleLineCommentPattern: /(\/\/|#)[^\r\n]*/y,
+
+  /**
+   * Doc comment pattern
+   */
+  DocCommentPattern: /\/\*\*[^]*?\*\//y,
+
+  /**
+   * Block comment pattern
+   */
+  BlockCommentPattern: /\/\*[^]*?\*\//y
 };
 
 type RegExpExecArrayWithPayload<T> = RegExpExecArray & { payload?: T };
@@ -108,18 +125,18 @@ export class ThriftTokens {
   SingleLineComment = createToken({
     name: "SingleLineComment",
     // NOTE: Comments can start with // or #, which is not documented
-    pattern: /(\/\/|#)[^\r\n]*/
+    pattern: this.makeRegexPayloadMatcher(Patterns.SingleLineCommentPattern, match => match.substring(1, match.length - 1))
   });
 
   DocComment = createToken({
     name: "DocComment",
-    pattern: /\/\*\*[^]*?\*\//,
+    pattern: this.makeRegexPayloadMatcher(Patterns.DocCommentPattern, match => match.substring(3, match.length - 2)),
     line_breaks: true
   });
 
   BlockComment = createToken({
     name: "BlockComment",
-    pattern: /\/\*[^]*?\*\//,
+    pattern: this.makeRegexPayloadMatcher(Patterns.BlockCommentPattern, match => match.substring(2, match.length - 2)),
     longer_alt: this.DocComment,
     line_breaks: true
   });
