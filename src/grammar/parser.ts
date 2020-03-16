@@ -110,7 +110,7 @@ export class ThriftCstParser extends CstParser {
    * @param name Rule name
    * @param keywordToken Keyword token
    */
-  private createKeywordFieldConsumer(name: RuleName, keywordToken: TokenType) {
+  private RULE_FILED_CONSUMER(name: RuleName, keywordToken: TokenType) {
     /**
      * [Keyword] [Identifier]
      * "{"
@@ -127,6 +127,13 @@ export class ThriftCstParser extends CstParser {
     });
   }
 
+  private RULE_WITH_LEADING_COMMENTS(name: RuleName, body: (...args: unknown[]) => unknown) {
+    return this.RULE(name, (...args) => {
+      this.SUBRULE(this.comments);
+      body(...args);
+    });
+  }
+
   /**
    * Root CST node rule
    */
@@ -135,11 +142,11 @@ export class ThriftCstParser extends CstParser {
 
     // "Every Thrift document contains 0 or more headers followed by 0 or more definitions."
     this.MANY1(() => {
-      this.SUBRULE1(this.header, { LABEL: "header" });
+      this.SUBRULE1(this.header);
     });
 
     this.MANY2(() => {
-      this.SUBRULE2(this.definition, { LABEL: "definition" });
+      this.SUBRULE2(this.definition);
     });
 
     this.SUBRULE2(this.comments, { LABEL: Rules.PostComments });
@@ -158,13 +165,12 @@ export class ThriftCstParser extends CstParser {
   /**
    * HEADER (Include | CPPInclude | Namespace)
    */
-  private header = this.RULE(Rules.Header, () => {
-    this.OPTION(() => this.SUBRULE(this.comments));
-    this.OPTION2(() =>
+  private header = this.RULE_WITH_LEADING_COMMENTS(Rules.Header, () => {
+    this.OPTION(() =>
       this.OR([
-        { ALT: () => this.SUBRULE(this.include, { LABEL: "include" }) },
-        { ALT: () => this.SUBRULE(this.cppInclude, { LABEL: "cpp_include" }) },
-        { ALT: () => this.SUBRULE(this.namespace, { LABEL: "namespace" }) }
+        { ALT: () => this.SUBRULE(this.include) },
+        { ALT: () => this.SUBRULE(this.cppInclude) },
+        { ALT: () => this.SUBRULE(this.namespace) }
       ])
     );
   });
@@ -192,17 +198,16 @@ export class ThriftCstParser extends CstParser {
   /**
    * DEFINITION (Const | TypeDef | Enum | Struct | Union | Exception | Service)
    */
-  private definition = this.RULE(Rules.Definition, () => {
-    this.SUBRULE(this.comments);
+  private definition = this.RULE_WITH_LEADING_COMMENTS(Rules.Definition, () => {
     this.OR([
-      { ALT: () => this.SUBRULE(this.constDefinition, { LABEL: "const" }) },
-      { ALT: () => this.SUBRULE(this.typedef, { LABEL: "typedef" }) },
-      { ALT: () => this.SUBRULE(this.enum, { LABEL: "enum" }) },
-      { ALT: () => this.SUBRULE(this.senum, { LABEL: "senum" }) },
-      { ALT: () => this.SUBRULE(this.struct, { LABEL: "struct" }) },
-      { ALT: () => this.SUBRULE(this.union, { LABEL: "union" }) },
-      { ALT: () => this.SUBRULE(this.exception, { LABEL: "exception" }) },
-      { ALT: () => this.SUBRULE(this.service, { LABEL: "service" }) }
+      { ALT: () => this.SUBRULE(this.constDefinition) },
+      { ALT: () => this.SUBRULE(this.typedef) },
+      { ALT: () => this.SUBRULE(this.enum) },
+      { ALT: () => this.SUBRULE(this.senum) },
+      { ALT: () => this.SUBRULE(this.struct) },
+      { ALT: () => this.SUBRULE(this.union) },
+      { ALT: () => this.SUBRULE(this.exception) },
+      { ALT: () => this.SUBRULE(this.service) }
     ]);
   });
 
@@ -239,9 +244,9 @@ export class ThriftCstParser extends CstParser {
     });
   });
 
-  private union = this.createKeywordFieldConsumer(Rules.Union, Tokens.Union);
-  private struct = this.createKeywordFieldConsumer(Rules.Struct, Tokens.Struct);
-  private exception = this.createKeywordFieldConsumer(Rules.Exception, Tokens.Exception);
+  private union = this.RULE_FILED_CONSUMER(Rules.Union, Tokens.Union);
+  private struct = this.RULE_FILED_CONSUMER(Rules.Struct, Tokens.Struct);
+  private exception = this.RULE_FILED_CONSUMER(Rules.Exception, Tokens.Exception);
 
   private senum = this.RULE(Rules.SEnum, () => {
     this.CONSUME(Tokens.SEnum);
