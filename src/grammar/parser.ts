@@ -129,7 +129,7 @@ export class ThriftCstParser extends CstParser {
 
   private RULE_WITH_LEADING_COMMENTS(name: RuleName, body: (...args: unknown[]) => unknown) {
     return this.RULE(name, (...args) => {
-      this.SUBRULE(this.comments);
+      this.OPTION9(() => this.SUBRULE(this.comments));
       body(...args);
     });
   }
@@ -268,7 +268,7 @@ export class ThriftCstParser extends CstParser {
     // NOTE: Enums are different from other field keyword consumers, they do not
     // have field ids, and assignments can only be int or hex constants
     this.CONSUME(Tokens.Enum);
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.Identifier);
     this.CONSUME(Tokens.LCurly);
 
     // this.MANY_SEP({
@@ -276,7 +276,7 @@ export class ThriftCstParser extends CstParser {
     //   DEF: () => this.SUBRULE(this.enumValue)
     // });
 
-    this.MANY(() => this.SUBRULE(this.enumValue, { LABEL: "values" }));
+    this.MANY(() => this.SUBRULE(this.enumValue));
 
     // There could be a trailing list separator
     this.OPTION(() => this.CONSUME2(Tokens.ListSeparator));
@@ -284,7 +284,7 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.RCurly);
 
     // Enum post annotations
-    this.OPTION3(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OPTION3(() => this.SUBRULE(this.annotations));
   });
 
   private enumValue = this.RULE(Rules.EnumValue, () => {
@@ -293,14 +293,14 @@ export class ThriftCstParser extends CstParser {
     this.OPTION(() => {
       this.CONSUME(Tokens.Assignment);
       this.OR([
-        { ALT: () => this.CONSUME(Tokens.HexConst, { LABEL: "value" }) },
-        { ALT: () => this.CONSUME(Tokens.IntConst, { LABEL: "value" }) },
-        { ALT: () => this.CONSUME2(Tokens.Identifier, { LABEL: "value" }) }
+        { ALT: () => this.CONSUME(Tokens.HexConst) },
+        { ALT: () => this.CONSUME(Tokens.IntConst) },
+        { ALT: () => this.CONSUME2(Tokens.Identifier) }
       ]);
     });
 
     // Annotations on enum fields
-    this.OPTION2(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OPTION2(() => this.SUBRULE(this.annotations));
 
     // Enable trailing separators
     this.OPTION3(() => {
