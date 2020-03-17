@@ -1,6 +1,6 @@
 import { LogMessage } from "./log";
 
-export type DefaultCliProperties = {
+export type DefaultCliOptions = {
   log: LogMessage;
 };
 
