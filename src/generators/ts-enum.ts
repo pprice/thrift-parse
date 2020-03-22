@@ -10,12 +10,6 @@ type EnumState = {
 export class TsEnumGenerator extends RecastGenerator {
   protected type = "ts";
 
-  protected getInitialState(): EnumState {
-    return {
-      lastMemberIndex: -1
-    };
-  }
-
   protected EnumRule({ node, parentAst }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
     const id = node.children.Identifier[0].image || "UNK";
 

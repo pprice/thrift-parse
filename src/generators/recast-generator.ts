@@ -36,8 +36,6 @@ export abstract class RecastGenerator extends Generator {
     super(root);
   }
 
-  protected abstract getInitialState(): unknown;
-
   private attemptVisit(node: ParseNode, parents: ParseNode[], state: unknown[], ast: RecastAstNode[]): InternalVisitResult {
     const nodeName = node.name || node.tokenType?.name;
     let result: VisitResult = null;
