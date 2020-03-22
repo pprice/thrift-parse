@@ -1,4 +1,5 @@
 import { ParseNode } from "../grammar/helpers";
+import { TimingInfo } from "../perf-util";
 
 export type GeneratorContent = {
   fileHint?: string;
@@ -8,7 +9,9 @@ export type GeneratorContent = {
 
 export type GeneratorResult = {
   errors?: Error[];
+  warnings?: string[];
   content?: GeneratorContent[];
+  timing?: { [key: string]: TimingInfo };
 };
 
 export abstract class Generator {

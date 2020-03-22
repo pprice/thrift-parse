@@ -10,6 +10,10 @@ type RuleChildren = { [key in RuleName]?: ParseNode[] };
 type TokenChildren = { [key in TokenName]?: IToken[] };
 type NodeChildren = RuleChildren & TokenChildren;
 
+type BaseParseNode = {
+  name?: RuleName;
+};
+
 export type ParseNode = {
   name?: RuleName;
   children?: NodeChildren;
@@ -17,3 +21,11 @@ export type ParseNode = {
     name: TokenName;
   };
 };
+
+export type PickParseNode<K extends keyof NodeChildren> = BaseParseNode & {
+  children?: Pick<NodeChildren, K>;
+};
+
+export type WithIdentifier = PickParseNode<"Identifier">;
+export type WithIntegerConst = PickParseNode<"HexConst" | "IntegerConst">;
+export type EnumValueNode = WithIdentifier & WithIntegerConst;
