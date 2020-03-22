@@ -168,7 +168,7 @@ export class ThriftTokens {
   });
 
   // TODO: BigNum support
-  IntConst = createToken({
+  IntegerConst = createToken({
     name: "IntegerConst",
     pattern: this.makeRegexPayloadMatcher(Patterns.IntConstPattern, match => Number.parseInt(match)),
     longer_alt: this.HexConst,
@@ -460,7 +460,7 @@ export class ThriftTokens {
     this.StringLiteral,
     this.DoubleConst, // NOTE: We need to attempt to tokenize doubles before integers as they are ambiguous
     this.HexConst,
-    this.IntConst,
+    this.IntegerConst,
     // Header
     this.Include,
     this.CPPInclude,
