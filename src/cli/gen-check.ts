@@ -18,13 +18,13 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
   const generatorFactory = getGeneratorFactory(options.type);
 
   if (generatorFactory === null) {
-    log(chalk`{redBright Error:} {red Unknown generator ${options.type}}`);
+    log.error(chalk`{redBright Error:} {red Unknown generator ${options.type}}`);
     return;
   }
 
   await matchAndProcessEach(options.file, log, async (match, content) => {
-    log();
-    log(chalk`Processing {green ${match}}...`);
+    log.none();
+    log.info(chalk`Processing {green ${match}}...`);
 
     const grammar = new ThriftGrammar();
     const result = grammar.parse(content);
@@ -43,7 +43,11 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
     }
 
     for (const generated of generatorResult.content) {
-      log(generated.content);
+      if (generated.content) {
+        log.none();
+        log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
+        log.info(chalk`{whiteBright ${generated.content}}`);
+      }
     }
   });
 }

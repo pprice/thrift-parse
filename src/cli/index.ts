@@ -1,7 +1,7 @@
-import { LogMessage } from "./log";
+import { Logger } from "./log";
 
 export type DefaultCliOptions = {
-  log: LogMessage;
+  log: Logger;
 };
 
 export * from "./check";

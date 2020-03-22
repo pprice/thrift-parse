@@ -18,8 +18,8 @@ export async function check(options: CheckOptions): Promise<void> {
   let failed = 0;
 
   const matches = await matchAndProcessEach(options.file, log, async (match, content) => {
-    log();
-    log(chalk`Parsing {green ${match}}...`);
+    log.none();
+    log.info(chalk`Parsing {green ${match}}...`);
 
     const grammar = new ThriftGrammar();
     const result = grammar.parse(content);
@@ -40,14 +40,14 @@ export async function check(options: CheckOptions): Promise<void> {
     outputGrammarStatus(result, log);
 
     if (options["print-cst"] && result.cst) {
-      log();
-      log(JSON.stringify(result.cst, null, 2));
+      log.none();
+      log.info(JSON.stringify(result.cst, null, 2));
     }
   });
 
   const e2eTime = e2eTimeHandle().format();
 
-  log();
-  log(`Processed ${matches.length} files in ${e2eTime.value.toFixed(2)} ${e2eTime.unit}`);
-  log(`${passed} succeeded, ${failed} failed`);
+  log.none();
+  log.info(`Processed ${matches.length} files in ${e2eTime.value.toFixed(2)} ${e2eTime.unit}`);
+  log.info(`${passed} succeeded, ${failed} failed`);
 }

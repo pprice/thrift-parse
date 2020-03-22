@@ -4,9 +4,15 @@ import { IToken } from "chevrotain";
 import { TimingInfo } from "../perf-util";
 import chalk from "chalk";
 
-export type LogMessage = (message?: unknown) => void;
+export type Logger = {
+  info: (message?: unknown) => void;
+  debug: (message?: unknown) => void;
+  warn: (message?: unknown) => void;
+  error: (message?: unknown) => void;
+  none: () => void;
+};
 
-export function outputGrammarStatus(result: GrammarParseResult, log: LogMessage): void {
+export function outputGrammarStatus(result: GrammarParseResult, log: Logger): void {
   const stageMessage = (stage: string, errors: unknown[], timing: TimingInfo): string => {
     const formattedTime = timing.format();
     const formattedTimeString = chalk`{gray (${formattedTime.value.toFixed(2)} ${formattedTime.unit})}`;
@@ -17,19 +23,19 @@ export function outputGrammarStatus(result: GrammarParseResult, log: LogMessage)
     return chalk`{red ${stage}:} ❌  {redBright [ ${errors.length} ${errors.length === 1 ? "error" : "errors"} ]}   ${formattedTimeString}`;
   };
 
-  log(`${stageMessage("Lex   ", result.errors.lex, result.performance.lex)}`);
-  log(`${stageMessage("Parse ", result.errors.parse, result.performance.parse)}`);
+  log.info(`${stageMessage("Lex   ", result.errors.lex, result.performance.lex)}`);
+  log.info(`${stageMessage("Parse ", result.errors.parse, result.performance.parse)}`);
 }
 
-export function outputParseError(file: string, error: ParseError, result: GrammarParseResult, log: LogMessage): void {
-  log(
+export function outputParseError(file: string, error: ParseError, result: GrammarParseResult, log: Logger): void {
+  log.error(
     chalk`{cyan ${file}}{yellow :${error.fragment.line}:${error.fragment.lineStart || 0}} - {redBright.bold Error:} {red ${
       error.exception.name
     }} - ${error.exception.message}`
   );
-  log();
+  log.none();
   const prefix = chalk`{gray |}`;
-  log(chalk`${prefix} {yellow Code:}`);
+  log.error(chalk`${prefix} {yellow Code:}`);
 
   const maxLineLength = (error.fragment.line + error.followingLines.length).toString().length;
 
@@ -39,27 +45,27 @@ export function outputParseError(file: string, error: ParseError, result: Gramma
 
   error.priorLines.forEach((line, idx) => {
     const lineNumber = error.fragment.line - error.priorLines.length + idx;
-    log(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
+    log.error(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
   });
 
-  log(chalk`${prefix} {gray ${makeLineNumber(error.fragment.line)}}  {whiteBright.bold ${error.originLine}}`);
+  log.error(chalk`${prefix} {gray ${makeLineNumber(error.fragment.line)}}  {whiteBright.bold ${error.originLine}}`);
   const indent = " ".repeat(error.fragment.lineStart);
   const highlight = "^".repeat(error.fragment.length);
-  log(chalk`${prefix} ${" ".repeat(maxLineLength)}  ${indent}{redBright.bold ${highlight}} {red ⟵  ${error.exception.name}}`);
+  log.error(chalk`${prefix} ${" ".repeat(maxLineLength)}  ${indent}{redBright.bold ${highlight}} {red ⟵  ${error.exception.name}}`);
 
   error.followingLines.forEach((line, idx) => {
     const lineNumber = error.fragment.line + idx + 1;
-    log(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
+    log.error(chalk`${prefix} {gray ${makeLineNumber(lineNumber)}}  {white ${line}}`);
   });
 
-  log(prefix);
+  log.error(prefix);
 
   if (error.exception?.context?.ruleStack.length > 0) {
-    log(prefix);
+    log.error(prefix);
     const stack = [...error.exception.context.ruleStack];
     const tail = stack.pop();
 
-    log(chalk`${prefix} {yellow Parse Stack:   } ${stack.join(" ⟶  ")} ${stack.length > 0 ? "⟶ " : ""} {bold ${tail}}`);
+    log.error(chalk`${prefix} {yellow Parse Stack:   } ${stack.join(" ⟶  ")} ${stack.length > 0 ? "⟶ " : ""} {bold ${tail}}`);
   }
 
   const generateTokenOutput = (token: IToken): string => {
@@ -67,17 +73,17 @@ export function outputParseError(file: string, error: ParseError, result: Gramma
   };
 
   if (error.exception.previousToken) {
-    log(chalk`${prefix} {yellow Previous Token:} ${generateTokenOutput(error.exception.previousToken)}`);
+    log.error(chalk`${prefix} {yellow Previous Token:} ${generateTokenOutput(error.exception.previousToken)}`);
   }
 
   if (error.exception.token) {
-    log(chalk`${prefix} {yellow Current Token: } ${generateTokenOutput(error.exception.token)}`);
+    log.error(chalk`${prefix} {yellow Current Token: } ${generateTokenOutput(error.exception.token)}`);
   }
 }
 
-export function outputParseErrors(file: string, errors: ParseError[], result: GrammarParseResult, log: LogMessage): void {
+export function outputParseErrors(file: string, errors: ParseError[], result: GrammarParseResult, log: Logger): void {
   errors.forEach(e => {
     outputParseError(file, e, result, log);
-    log();
+    log.error();
   });
 }

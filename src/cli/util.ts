@@ -1,12 +1,12 @@
 import * as fs from "fs";
 
-import { LogMessage } from "./log";
+import { Logger } from "./log";
 import glob from "fast-glob";
 import normalize from "normalize-path";
 
 export async function matchAndProcessEach(
   pattern: string,
-  log: LogMessage,
+  log: Logger,
   itemCallback: (match: string, content: string) => Promise<void>
 ): Promise<string[]> {
   const matches = await glob(normalize(pattern), { onlyFiles: true, globstar: true });
