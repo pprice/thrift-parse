@@ -99,7 +99,7 @@ export type RuleName = TRules[keyof TRules];
  */
 export class ThriftCstParser extends CstParser {
   constructor() {
-    super(Tokens.Order);
+    super(Tokens.Order, { maxLookahead: 4 });
     this.performSelfAnalysis();
   }
 
@@ -213,7 +213,7 @@ export class ThriftCstParser extends CstParser {
 
   private fieldId = this.RULE(Rules.FieldId, () => {
     this.SUBRULE(this.comments, { ARGS: [false] });
-    this.CONSUME(Tokens.IntConst, { LABEL: "id" });
+    this.CONSUME(Tokens.IntegerConst, { LABEL: "id" });
     this.CONSUME(Tokens.Colon);
   });
 
@@ -289,12 +289,12 @@ export class ThriftCstParser extends CstParser {
 
   private enumValue = this.RULE(Rules.EnumValue, () => {
     this.SUBRULE(this.comments);
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.Identifier);
     this.OPTION(() => {
       this.CONSUME(Tokens.Assignment);
       this.OR([
         { ALT: () => this.CONSUME(Tokens.HexConst) },
-        { ALT: () => this.CONSUME(Tokens.IntConst) },
+        { ALT: () => this.CONSUME(Tokens.IntegerConst) },
         { ALT: () => this.CONSUME2(Tokens.Identifier) }
       ]);
     });
@@ -377,7 +377,7 @@ export class ThriftCstParser extends CstParser {
         // If the incoming type assignment is known; gate options to be valid (e.g. cant assign a string to an i32)
         { GATE: () => skipCheck || isStringAssignable(knownType), ALT: () => this.CONSUME(Tokens.StringLiteral) },
         { GATE: () => skipCheck || isIntegerAssignable(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
-        { GATE: () => skipCheck || isIntegerAssignable(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntConst) },
+        { GATE: () => skipCheck || isIntegerAssignable(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntegerConst) },
         { GATE: () => skipCheck || isDoubleAssignable(knownType), ALT: () => this.CONSUME(Tokens.DoubleConst) },
         { GATE: () => skipCheck || isMapAssignable(knownType), ALT: () => this.SUBRULE(this.mapConst) },
         { GATE: () => skipCheck || isListAssignable(knownType), ALT: () => this.SUBRULE(this.listConst) },
