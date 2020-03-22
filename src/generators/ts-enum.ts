@@ -1,6 +1,6 @@
-import { EnumValueNode, ParseNode, WithIdentifier } from "../grammar/helpers";
 import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
 
+import { EnumValueNode } from "../grammar/helpers";
 import { types } from "recast";
 
 type EnumState = {
