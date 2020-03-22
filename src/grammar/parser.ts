@@ -110,7 +110,7 @@ export class ThriftCstParser extends CstParser {
    * @param name Rule name
    * @param keywordToken Keyword token
    */
-  private RULE_FILED_CONSUMER(name: RuleName, keywordToken: TokenType) {
+  private RULE_FIELD_CONSUMER(name: RuleName, keywordToken: TokenType) {
     /**
      * [Keyword] [Identifier]
      * "{"
@@ -244,9 +244,9 @@ export class ThriftCstParser extends CstParser {
     });
   });
 
-  private union = this.RULE_FILED_CONSUMER(Rules.Union, Tokens.Union);
-  private struct = this.RULE_FILED_CONSUMER(Rules.Struct, Tokens.Struct);
-  private exception = this.RULE_FILED_CONSUMER(Rules.Exception, Tokens.Exception);
+  private union = this.RULE_FIELD_CONSUMER(Rules.Union, Tokens.Union);
+  private struct = this.RULE_FIELD_CONSUMER(Rules.Struct, Tokens.Struct);
+  private exception = this.RULE_FIELD_CONSUMER(Rules.Exception, Tokens.Exception);
 
   private senum = this.RULE(Rules.SEnum, () => {
     this.CONSUME(Tokens.SEnum);
