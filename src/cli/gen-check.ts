@@ -1,11 +1,12 @@
 import { ThriftGrammar, buildParseErrors } from "../grammar";
+import { outputGeneratorStatus, outputGrammarStatus, outputParseErrors } from "./log";
 
 import { DefaultCliOptions } from ".";
+import { GeneratorResult } from "../generators/generator";
 import { ParseNode } from "../grammar/helpers";
 import chalk from "chalk";
 import { getGeneratorFactory } from "../generators";
 import { matchAndProcessEach } from "./util";
-import { outputParseErrors } from "./log";
 
 type GenCheckOptions = {
   file: string;
@@ -23,31 +24,40 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
   }
 
   await matchAndProcessEach(options.file, log, async (match, content) => {
-    log.none();
     log.info(chalk`Processing {green ${match}}...`);
+    log.separator();
 
     const grammar = new ThriftGrammar();
-    const result = grammar.parse(content);
+    const parseResult = grammar.parse(content);
+    let generatorResult: GeneratorResult = null;
 
-    if (result.errors.parse.length > 0) {
-      const detailedParseErrors = buildParseErrors(content, result.errors.parse);
-      outputParseErrors(match, detailedParseErrors, result, log);
-      return;
-    }
+    if (parseResult.errors.parse.length > 0) {
+      const detailedParseErrors = buildParseErrors(content, parseResult.errors.parse);
+      outputParseErrors(match, detailedParseErrors, parseResult, log);
+    } else {
+      const generator = generatorFactory(parseResult.cst as ParseNode);
+      generatorResult = await generator.process();
 
-    const generator = generatorFactory(result.cst as ParseNode);
-    const generatorResult = await generator.process();
+      if (generatorResult.errors?.length == 0) {
+        let generatedWithContent = 0;
+        for (const generated of generatorResult.content) {
+          if (generated.content) {
+            generatedWithContent++;
+            log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
+            log.separator();
+            log.info(chalk`{whiteBright ${generated.content}}`);
+          }
+        }
 
-    if (generatorResult.errors?.length > 0) {
-      return;
-    }
-
-    for (const generated of generatorResult.content) {
-      if (generated.content) {
-        log.none();
-        log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
-        log.info(chalk`{whiteBright ${generated.content}}`);
+        if (generatedWithContent == 0) {
+          log.warn("Nothing generated");
+        }
       }
     }
+
+    log.separator();
+    outputGrammarStatus(parseResult, log);
+    outputGeneratorStatus(generatorResult, log);
+    log.separator();
   });
 }

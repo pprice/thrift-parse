@@ -7,7 +7,6 @@ type TimingInfoFormat = {
 };
 
 export type TimingInfo = {
-  name?: string;
   milliseconds: number;
   seconds: number;
   minutes: number;
@@ -37,23 +36,25 @@ function createFormatter(minutes: number, seconds: number, milliseconds: number)
   };
 }
 
-export function time(name?: string): TimingBlock {
+export function fromMilliseconds(milliseconds: number): TimingInfo {
+  const seconds = milliseconds / 1000.0;
+  const minutes = seconds / 60.0;
+  return {
+    milliseconds,
+    seconds,
+    minutes,
+    format: createFormatter(minutes, seconds, milliseconds)
+  };
+}
+
+export function time(basis?: TimingInfo): TimingBlock {
   const start = process.hrtime();
 
   return (): TimingInfo => {
     const time = process.hrtime(start);
 
     const nanoseconds = time[0] * 1e9 + time[1];
-    const milliseconds = nanoseconds / 1e6;
-    const seconds = nanoseconds / 1e9;
-    const minutes = seconds / 60.0;
-
-    return {
-      name,
-      milliseconds,
-      seconds,
-      minutes,
-      format: createFormatter(minutes, seconds, milliseconds)
-    };
+    const milliseconds = nanoseconds / 1e6 + (basis?.milliseconds || 0);
+    return fromMilliseconds(milliseconds);
   };
 }

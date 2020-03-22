@@ -12,7 +12,12 @@ async function main(): Promise<void> {
     info: message => console.log(message),
     warn: message => console.error(chalk`{yellow ${message}}`),
     error: message => console.error(chalk`{red ${message}}`),
-    none: () => console.log()
+    none: () => console.log(),
+    separator: () => {
+      const columns = process.stdout?.columns || 80;
+
+      console.log(chalk`{grey ${"─".repeat(columns - 1)}}`);
+    }
   };
 
   const argv = yargs

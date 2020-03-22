@@ -11,7 +11,7 @@ export type GeneratorResult = {
   errors?: Error[];
   warnings?: string[];
   content?: GeneratorContent[];
-  timing?: { [key: string]: TimingInfo };
+  performance?: { [key: string]: TimingInfo };
 };
 
 export abstract class Generator {
