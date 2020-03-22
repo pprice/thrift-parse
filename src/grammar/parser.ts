@@ -196,7 +196,7 @@ export class ThriftCstParser extends CstParser {
   });
 
   /**
-   * DEFINITION (Const | TypeDef | Enum | Struct | Union | Exception | Service)
+   * DEFINITION (Const | TypeDef | Enum | Senum | Struct | Union | Exception | Service)
    */
   private definition = this.RULE_WITH_LEADING_COMMENTS(Rules.Definition, () => {
     this.OR([
