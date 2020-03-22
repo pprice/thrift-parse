@@ -15,9 +15,9 @@ export type RecastVisitorInput<TAst extends RecastAstNode = RecastAstNode, TStat
   node: TNode;
   state: TState;
   parentAst: TAst;
-  nodeStack: ParseNode[];
-  stateStack: unknown[];
-  astStack: RecastAstNode[];
+  nodes: ParseNode[];
+  states: unknown[];
+  ast: RecastAstNode[];
 };
 
 type RecastVisitorFunc = (input: RecastVisitorInput) => VisitResult | null;
@@ -48,9 +48,9 @@ export abstract class RecastGenerator extends Generator {
           node: node,
           state: state[0] || null,
           parentAst: ast[0] || null,
-          nodeStack: parents,
-          stateStack: state,
-          astStack: ast
+          nodes: parents,
+          states: state,
+          ast: ast
         };
 
         result = func.apply(this, [input]);
