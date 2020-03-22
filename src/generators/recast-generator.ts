@@ -7,12 +7,12 @@ import { time } from "../perf-util";
 
 export type VisitResult<T = unknown> = {
   node?: RecastAstNode;
-  customState?: T;
+  state?: T;
   stop?: boolean;
 };
 
-type RecastVisitor = (node: ParseNode, astStack: RecastAstNode[]) => VisitResult | null;
-type InternalVisitResult = { result: VisitResult; ast: RecastAstNode[] };
+type RecastVisitor = (node: ParseNode, state: unknown, astStack: RecastAstNode[]) => VisitResult | null;
+type InternalVisitResult = { result: VisitResult; state: unknown[]; ast: RecastAstNode[] };
 
 export type RecastAstNode = recast.types.namedTypes.Node;
 
@@ -25,7 +25,9 @@ export abstract class RecastGenerator extends Generator {
     super(root);
   }
 
-  private attemptVisit(node: ParseNode, ast: RecastAstNode[]): InternalVisitResult {
+  protected abstract getInitialState(): unknown;
+
+  private attemptVisit(node: ParseNode, state: unknown[], ast: RecastAstNode[]): InternalVisitResult {
     const nodeName = node.name || node.tokenType?.name;
     let result: VisitResult = null;
 
@@ -33,10 +35,14 @@ export abstract class RecastGenerator extends Generator {
       const func: RecastVisitor = this[nodeName];
 
       if (func) {
-        result = func.apply(this, [node, ...ast]);
+        const lastState = state.length === 0 ? null : state[state.length - 1];
+        result = func.apply(this, [node, lastState, ...ast]);
 
         if (result?.node) {
           ast = [result.node, ...ast];
+        }
+        if (result?.state) {
+          state = [result.state, ...state];
         }
       } else {
         // console.log(`No handler for ${nodeName}`);
@@ -45,6 +51,7 @@ export abstract class RecastGenerator extends Generator {
 
     return {
       result,
+      state,
       ast
     };
   }
@@ -57,13 +64,18 @@ export abstract class RecastGenerator extends Generator {
     // TODO: Not very clean to ignore children, but...
     const walkTimeHandle = time();
 
-    type TreeStackNode = { node: ParseNode; ast: RecastAstNode[] };
+    type TreeStackNode = { node: ParseNode; state: unknown[]; ast: RecastAstNode[] };
     let ast: RecastAstNode[] = [this.program];
+    let state: unknown[] = [];
 
-    const rootResult = this.attemptVisit(this.root, ast);
+    const rootResult = this.attemptVisit(this.root, state, ast);
 
     if (rootResult?.result?.node) {
       ast = [rootResult.result.node, ...ast];
+    }
+
+    if (rootResult?.result?.state) {
+      state = [rootResult.result.stop, ...state];
     }
 
     if (!rootResult?.result?.stop) {
@@ -72,7 +84,7 @@ export abstract class RecastGenerator extends Generator {
           return null;
         }
 
-        return parseNode.map(i => ({ node: i, ast }));
+        return parseNode.map(i => ({ node: i, state, ast }));
       };
 
       // Ensure order of top level items, as the root rule is ordered by node name
@@ -86,10 +98,11 @@ export abstract class RecastGenerator extends Generator {
       // Depth first walk of tree
       while (treeStack.length > 0) {
         // eslint-disable-next-line prefer-const
-        let { node, ast } = treeStack.pop();
+        let { node, state, ast } = treeStack.pop();
 
-        const visit = this.attemptVisit(node, ast);
+        const visit = this.attemptVisit(node, state, ast);
         ast = visit.ast;
+        state = visit.state;
 
         if (!visit.result || !visit.result.stop) {
           const childKeys = node.children && Object.keys(node.children);
@@ -98,9 +111,12 @@ export abstract class RecastGenerator extends Generator {
           if (hasChildren) {
             // CstNode
             for (const key of childKeys) {
-              const childNode = node.children[key];
+              const childNode: unknown[] = node.children[key];
 
-              treeStack.push(...childNode.map(i => ({ node: i, ast: [...ast] })));
+              // NOTE: Children need to be reverse so when they enter the stack they are enumerated in the expected order
+              const next = childNode.map(i => ({ node: i, state: [...state], ast: [...ast] })).reverse();
+
+              treeStack.push(...next);
             }
           }
         }
