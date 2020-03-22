@@ -1,5 +1,5 @@
-import { EnumValueNode, WithIdentifier } from "../grammar/helpers";
-import { RecastGenerator, VisitResult } from "./recast-generator";
+import { EnumValueNode, ParseNode, WithIdentifier } from "../grammar/helpers";
+import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
 
 import { types } from "recast";
 
@@ -16,22 +16,26 @@ export class TsEnumGenerator extends RecastGenerator {
     };
   }
 
-  protected EnumRule(node: WithIdentifier, state: void, program: types.namedTypes.Program): VisitResult<EnumState> {
+  protected EnumRule({ node, parentAst }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
     const id = node.children.Identifier[0].image || "UNK";
 
     const enums = this.builder.tsEnumDeclaration(this.id(id), []);
 
-    program.body.push(this.builder.exportNamedDeclaration(enums));
+    parentAst.body.push(this.builder.exportNamedDeclaration(enums));
 
     return {
-      node: enums,
+      astNode: enums,
       state: {
         lastMemberIndex: 0
       }
     };
   }
 
-  protected EnumValueRule(node: EnumValueNode, state: EnumState, tsEnum: types.namedTypes.TSEnumDeclaration): VisitResult {
+  protected EnumValueRule({
+    node,
+    state,
+    parentAst
+  }: RecastVisitorInput<types.namedTypes.TSEnumDeclaration, EnumState, EnumValueNode>): VisitResult<EnumState> {
     // The behavior of enum values is to use the value specified for the enum member, if none
     // start increment the previous value by one; if there is no previous value start at 0
 
@@ -42,12 +46,13 @@ export class TsEnumGenerator extends RecastGenerator {
       value = ++state.lastMemberIndex;
     }
 
-    tsEnum.members.push(this.builder.tsEnumMember(this.id(id), this.literal(value)));
+    const enumMember = this.builder.tsEnumMember(this.id(id), this.literal(value));
+    parentAst.members.push(enumMember);
 
     state.lastMemberIndex = value;
 
     return {
-      node: tsEnum,
+      astNode: enumMember,
       state,
       stop: true
     };

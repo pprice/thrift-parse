@@ -6,10 +6,21 @@ import { ParseNode } from "../grammar/helpers";
 import { time } from "../perf-util";
 
 export type VisitResult<T = unknown> = {
-  node?: RecastAstNode;
+  astNode?: RecastAstNode;
   state?: T;
   stop?: boolean;
 };
+
+export type RecastVisitorInput<TAst extends RecastAstNode = RecastAstNode, TState = unknown, TNode extends ParseNode = ParseNode> = {
+  node: TNode;
+  state: TState;
+  parentAst: TAst;
+  nodeStack: ParseNode[];
+  stateStack: unknown[];
+  astStack: RecastAstNode[];
+};
+
+type RecastVisitorFunc = (input: RecastVisitorInput) => VisitResult | null;
 
 type RecastVisitor = (node: ParseNode, state: unknown, astStack: RecastAstNode[]) => VisitResult | null;
 type InternalVisitResult = { result: VisitResult; state: unknown[]; ast: RecastAstNode[] };
@@ -27,19 +38,27 @@ export abstract class RecastGenerator extends Generator {
 
   protected abstract getInitialState(): unknown;
 
-  private attemptVisit(node: ParseNode, state: unknown[], ast: RecastAstNode[]): InternalVisitResult {
+  private attemptVisit(node: ParseNode, parents: ParseNode[], state: unknown[], ast: RecastAstNode[]): InternalVisitResult {
     const nodeName = node.name || node.tokenType?.name;
     let result: VisitResult = null;
 
     if (nodeName) {
-      const func: RecastVisitor = this[nodeName];
+      const func: RecastVisitorFunc = this[nodeName];
 
       if (func) {
-        const lastState = state.length === 0 ? null : state[state.length - 1];
-        result = func.apply(this, [node, lastState, ...ast]);
+        const input: RecastVisitorInput = {
+          node: node,
+          state: state[0] || null,
+          parentAst: ast[0] || null,
+          nodeStack: parents,
+          stateStack: state,
+          astStack: ast
+        };
 
-        if (result?.node) {
-          ast = [result.node, ...ast];
+        result = func.apply(this, [input]);
+
+        if (result?.astNode) {
+          ast = [result.astNode, ...ast];
         }
         if (result?.state) {
           state = [result.state, ...state];
@@ -64,14 +83,16 @@ export abstract class RecastGenerator extends Generator {
     // TODO: Not very clean to ignore children, but...
     const walkTimeHandle = time();
 
-    type TreeStackNode = { node: ParseNode; state: unknown[]; ast: RecastAstNode[] };
+    type TreeStackNode = { node: ParseNode; parents: ParseNode[]; state: unknown[]; ast: RecastAstNode[] };
+
+    const parents = [this.root];
     let ast: RecastAstNode[] = [this.program];
     let state: unknown[] = [];
 
-    const rootResult = this.attemptVisit(this.root, state, ast);
+    const rootResult = this.attemptVisit(this.root, parents, state, ast);
 
-    if (rootResult?.result?.node) {
-      ast = [rootResult.result.node, ...ast];
+    if (rootResult?.result?.astNode) {
+      ast = [rootResult.result.astNode, ...ast];
     }
 
     if (rootResult?.result?.state) {
@@ -81,10 +102,10 @@ export abstract class RecastGenerator extends Generator {
     if (!rootResult?.result?.stop) {
       const mapRootRule = (parseNode: ParseNode[]): TreeStackNode[] => {
         if (!parseNode) {
-          return null;
+          return [];
         }
 
-        return parseNode.map(i => ({ node: i, state, ast }));
+        return parseNode.map(i => ({ node: i, parents: [...parents], state, ast }));
       };
 
       // Ensure order of top level items, as the root rule is ordered by node name
@@ -98,9 +119,9 @@ export abstract class RecastGenerator extends Generator {
       // Depth first walk of tree
       while (treeStack.length > 0) {
         // eslint-disable-next-line prefer-const
-        let { node, state, ast } = treeStack.pop();
+        let { node, state, ast, parents } = treeStack.pop();
 
-        const visit = this.attemptVisit(node, state, ast);
+        const visit = this.attemptVisit(node, parents, state, ast);
         ast = visit.ast;
         state = visit.state;
 
@@ -114,7 +135,9 @@ export abstract class RecastGenerator extends Generator {
               const childNode: unknown[] = node.children[key];
 
               // NOTE: Children need to be reverse so when they enter the stack they are enumerated in the expected order
-              const next = childNode.map(i => ({ node: i, state: [...state], ast: [...ast] })).reverse();
+              const next: TreeStackNode[] = childNode
+                .map(i => ({ node: i, parents: [node, ...parents], state: [...state], ast: [...ast] }))
+                .reverse();
 
               treeStack.push(...next);
             }
