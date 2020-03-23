@@ -30,5 +30,5 @@ export type PickParseNode<K extends keyof NodeChildren> = BaseParseNode & {
 
 export type WithIdentifier = PickParseNode<"Identifier">;
 export type WithIntegerConst = PickParseNode<"HexConst" | "IntegerConst">;
-export type EnumValueNode = WithIdentifier & WithIntegerConst;
 export type WithComments = PickParseNode<"CommentsRule">;
+export type EnumValueNode = WithIdentifier & WithIntegerConst & WithComments;

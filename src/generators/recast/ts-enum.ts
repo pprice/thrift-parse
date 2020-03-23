@@ -46,6 +46,7 @@ export class TsEnumGenerator extends RecastGenerator {
     }
 
     const enumMember = b.tsEnumMember(b.identifier(id), b.literal(value));
+    enumMember.comments = transformComments(node);
     parentAst.members.push(enumMember);
 
     state.lastMemberIndex = value;
