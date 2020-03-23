@@ -1,7 +1,9 @@
-import { EnumValueNode, WithComments } from "../grammar/nodes";
+import { EnumValueNode, WithComments, firstPayload, identifierOf } from "../../grammar/nodes";
 import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
 
-import { findByName } from "../grammar/nodes";
+import { b } from "./builders";
+import { findByName } from "../../grammar/nodes";
+import { transformComments } from "./builders/transform";
 import { types } from "recast";
 
 type EnumState = {
@@ -12,14 +14,13 @@ export class TsEnumGenerator extends RecastGenerator {
   protected type = "ts";
 
   protected EnumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
-    const id = node.children.Identifier[0].image || "UNK";
-
-    const enumDeclaration = this.builder.tsEnumDeclaration(this.id(id), []);
-    const exported = this.builder.exportNamedDeclaration(enumDeclaration);
+    const id = identifierOf(node);
+    const enumDeclaration = b.tsEnumDeclaration(b.identifier(id), []);
+    const exported = b.exportNamedDeclaration(enumDeclaration);
     parentAst.body.push(exported);
 
     const container = findByName<WithComments>(nodes, "DefinitionRule");
-    this.pushComments(container, exported);
+    exported.comments = transformComments(container);
 
     return {
       astNode: enumDeclaration,
@@ -37,14 +38,14 @@ export class TsEnumGenerator extends RecastGenerator {
     // The behavior of enum values is to use the value specified for the enum member, if none
     // start increment the previous value by one; if there is no previous value start at 0
 
-    const id = node.children.Identifier[0].image || "UNK";
-    let value: number = node.children?.HexConst?.[0].payload || node.children?.IntegerConst?.[0].payload;
+    const id = identifierOf(node);
+    let value: number = firstPayload(node, "HexConst", "IntegerConst");
 
-    if (value == null) {
+    if (value == undefined) {
       value = ++state.lastMemberIndex;
     }
 
-    const enumMember = this.builder.tsEnumMember(this.id(id), this.literal(value));
+    const enumMember = b.tsEnumMember(b.identifier(id), b.literal(value));
     parentAst.members.push(enumMember);
 
     state.lastMemberIndex = value;
