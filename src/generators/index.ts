@@ -1,5 +1,5 @@
 import { Generator } from "./generator";
-import { ParseNode } from "../grammar/helpers";
+import { ParseNode } from "../grammar/nodes";
 import { TsEnumGenerator } from "./ts-enum";
 
 type GeneratorFactory = (root: ParseNode) => Generator;

@@ -1,7 +1,7 @@
-import { EnumValueNode, WithComments } from "../grammar/helpers";
+import { EnumValueNode, WithComments } from "../grammar/nodes";
 import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
 
-import { findByName } from "../grammar/helpers/find";
+import { findByName } from "../grammar/nodes";
 import { types } from "recast";
 
 type EnumState = {

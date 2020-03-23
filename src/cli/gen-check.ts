@@ -3,7 +3,7 @@ import { outputGeneratorStatus, outputGrammarStatus, outputParseErrors } from ".
 
 import { DefaultCliOptions } from ".";
 import { GeneratorResult } from "../generators/generator";
-import { ParseNode } from "../grammar/helpers";
+import { ParseNode } from "../grammar/nodes";
 import chalk from "chalk";
 import { getGeneratorFactory } from "../generators";
 import { matchAndProcessEach } from "./util";

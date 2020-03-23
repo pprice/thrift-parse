@@ -9,9 +9,9 @@ import {
   isListAssignable,
   isMapAssignable,
   isStringAssignable
-} from "./helpers/thrift-types";
+} from "./nodes";
 
-import { ParseNode } from "./helpers";
+import { ParseNode } from "./nodes";
 import { Tokens } from "./lexer";
 
 // TODO: typeof Rules without const declaration of value within a type

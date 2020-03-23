@@ -1,6 +1,5 @@
-import { extractComments, extractPostComments } from "../helpers/comments";
+import { ParseNode, extractComments, extractPostComments } from "../nodes";
 
-import { ParseNode } from "../helpers";
 import { ThriftGrammar } from "../api";
 
 describe("Comments", () => {

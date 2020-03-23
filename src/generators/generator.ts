@@ -1,4 +1,4 @@
-import { ParseNode } from "../grammar/helpers";
+import { ParseNode } from "../grammar/nodes";
 import { TimingInfo } from "../perf-util";
 
 export type GeneratorContent = {

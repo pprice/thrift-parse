@@ -1,11 +1,8 @@
 import * as recast from "recast";
 
+import { Comment, ParseNode, extractComments } from "../grammar/nodes";
 import { Generator, GeneratorResult } from "./generator";
 import { TimingInfo, fromMilliseconds, time } from "../perf-util";
-
-import { Comment } from "../grammar/helpers/comments";
-import { ParseNode } from "../grammar/helpers";
-import { extractComments } from "../grammar/helpers/comments";
 
 export type VisitResult<T = unknown> = {
   astNode?: RecastAstNode;
