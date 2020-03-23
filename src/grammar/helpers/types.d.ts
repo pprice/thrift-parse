@@ -4,6 +4,8 @@ import { IToken as CIToken, TokenType } from "chevrotain";
 
 export type RuleName = ParserRuleName;
 export type TokenName = LexerTokenName;
+export type NodeName = RuleName | TokenName;
+
 export type IToken = CIToken;
 
 type RuleChildren = { [key in RuleName]?: ParseNode[] };
@@ -29,3 +31,4 @@ export type PickParseNode<K extends keyof NodeChildren> = BaseParseNode & {
 export type WithIdentifier = PickParseNode<"Identifier">;
 export type WithIntegerConst = PickParseNode<"HexConst" | "IntegerConst">;
 export type EnumValueNode = WithIdentifier & WithIntegerConst;
+export type WithComments = PickParseNode<"CommentsRule">;

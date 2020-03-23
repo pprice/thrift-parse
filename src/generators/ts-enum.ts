@@ -1,6 +1,7 @@
+import { EnumValueNode, WithComments } from "../grammar/helpers";
 import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
 
-import { EnumValueNode } from "../grammar/helpers";
+import { findByName } from "../grammar/helpers/find";
 import { types } from "recast";
 
 type EnumState = {
@@ -10,15 +11,18 @@ type EnumState = {
 export class TsEnumGenerator extends RecastGenerator {
   protected type = "ts";
 
-  protected EnumRule({ node, parentAst }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
+  protected EnumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
     const id = node.children.Identifier[0].image || "UNK";
 
-    const enums = this.builder.tsEnumDeclaration(this.id(id), []);
+    const enumDeclaration = this.builder.tsEnumDeclaration(this.id(id), []);
+    const exported = this.builder.exportNamedDeclaration(enumDeclaration);
+    parentAst.body.push(exported);
 
-    parentAst.body.push(this.builder.exportNamedDeclaration(enums));
+    const container = findByName<WithComments>(nodes, "DefinitionRule");
+    this.pushComments(container, exported);
 
     return {
-      astNode: enums,
+      astNode: enumDeclaration,
       state: {
         lastMemberIndex: 0
       }

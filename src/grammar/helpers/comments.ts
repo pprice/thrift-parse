@@ -25,7 +25,7 @@ function extractAnyComment(commentNode: ParseNode): Comment[] {
   const comments = [];
   if (commentNode.children.SingleLineComment) {
     comments.push(
-      ...collectPayloads(commentNode.children.SingleLineComment).map(value => ({
+      ...collectPayloads(commentNode.children.SingleLineComment, false).map(value => ({
         type: "Line",
         value
       }))
@@ -54,7 +54,7 @@ function extractAnyComment(commentNode: ParseNode): Comment[] {
 }
 
 export function extractComments(node: ParseNode): Comment[] {
-  if (node.children.CommentsRule) {
+  if (node?.children?.CommentsRule) {
     return extractAnyComment(node.children.CommentsRule[0]);
   }
 
@@ -62,7 +62,7 @@ export function extractComments(node: ParseNode): Comment[] {
 }
 
 export function extractPostComments(node: ParseNode): Comment[] {
-  if (node.children.PostCommentsRule) {
+  if (node?.children?.PostCommentsRule) {
     return extractAnyComment(node.children.PostCommentsRule[0]);
   }
 

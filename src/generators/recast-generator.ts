@@ -3,7 +3,9 @@ import * as recast from "recast";
 import { Generator, GeneratorResult } from "./generator";
 import { TimingInfo, fromMilliseconds, time } from "../perf-util";
 
+import { Comment } from "../grammar/helpers/comments";
 import { ParseNode } from "../grammar/helpers";
+import { extractComments } from "../grammar/helpers/comments";
 
 export type VisitResult<T = unknown> = {
   astNode?: RecastAstNode;
@@ -185,5 +187,34 @@ export abstract class RecastGenerator extends Generator {
 
   protected literal(value: string | number | boolean | RegExp): recast.types.namedTypes.Literal {
     return this.builder.literal(value);
+  }
+
+  protected pushComments(from: ParseNode | ParseNode[], to: RecastAstNode): void {
+    if (!from || !to) {
+      return;
+    }
+
+    if (!to.comments) {
+      to.comments = [];
+    }
+
+    const sources = Array.isArray(from) ? from : [from];
+
+    for (const source of sources) {
+      const comments = extractComments(source);
+
+      // TODO: Add leading spaces if the comment type changes
+      const mappedComments = comments.map(c => this.recastComment(c));
+
+      to.comments.push(...mappedComments);
+    }
+  }
+
+  recastComment(c: Comment): recast.types.namedTypes.CommentBlock | recast.types.namedTypes.CommentLine {
+    if (c.type === "Line") {
+      return this.builder.commentLine(c.value);
+    }
+
+    return this.builder.commentBlock(c.value);
   }
 }
