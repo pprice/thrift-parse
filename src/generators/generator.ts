@@ -9,7 +9,7 @@ export type GeneratorContent = {
 
 export type GeneratorResult = {
   errors?: Error[];
-  warnings?: string[];
+  warnings?: Error[];
   content?: GeneratorContent[];
   performance?: { [key: string]: TimingInfo };
 };
