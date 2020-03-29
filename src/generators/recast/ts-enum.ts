@@ -12,7 +12,7 @@ type EnumState = {
 export class TsEnumGenerator extends RecastGenerator {
   protected type = "ts";
 
-  protected EnumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): RecastVisitResult<EnumState> {
+  protected enumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): RecastVisitResult<EnumState> {
     const id = identifierOf(node);
     const enumDeclaration = b.tsEnumDeclaration(b.identifier(id), []);
     const exported = b.exportNamedDeclaration(enumDeclaration);
@@ -29,7 +29,7 @@ export class TsEnumGenerator extends RecastGenerator {
     };
   }
 
-  protected EnumValueRule({
+  protected enumValueRule({
     node,
     state,
     parentAst

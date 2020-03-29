@@ -21,9 +21,13 @@ export type DocComment = BaseComment & {
 
 export type Comment = LineComment | BlockComment | DocComment;
 
-function extractAnyComment(commentNode: ParseNode): Comment[] {
+const AllCommentTypes = new Set(["Line", "Block", "Doc"]);
+
+function extractAnyComment(commentNode: ParseNode, types: Comment["type"][]): Comment[] {
   const comments = [];
-  if (commentNode.children.SingleLineComment) {
+  const typesSet = types.length > 0 ? new Set(types) : AllCommentTypes;
+
+  if (typesSet.has("Line") && commentNode.children.SingleLineComment) {
     comments.push(
       ...collectPayloads(commentNode.children.SingleLineComment, false).map(value => ({
         type: "Line",
@@ -32,7 +36,7 @@ function extractAnyComment(commentNode: ParseNode): Comment[] {
     );
   }
 
-  if (commentNode.children.BlockComment) {
+  if (typesSet.has("Block") && commentNode.children.BlockComment) {
     comments.push(
       ...collectPayloads(commentNode.children.BlockComment).map(value => ({
         type: "Block",
@@ -41,7 +45,7 @@ function extractAnyComment(commentNode: ParseNode): Comment[] {
     );
   }
 
-  if (commentNode.children.DocComment) {
+  if (typesSet.has("Doc") && commentNode.children.DocComment) {
     comments.push(
       ...collectPayloads(commentNode.children.DocComment).map(value => ({
         type: "Doc",
@@ -53,17 +57,17 @@ function extractAnyComment(commentNode: ParseNode): Comment[] {
   return comments;
 }
 
-export function extractComments(node: ParseNode): Comment[] {
+export function extractComments(node: ParseNode, ...types: Comment["type"][]): Comment[] {
   if (node?.children?.CommentsRule) {
-    return extractAnyComment(node.children.CommentsRule[0]);
+    return extractAnyComment(node.children.CommentsRule[0], types);
   }
 
   return [];
 }
 
-export function extractPostComments(node: ParseNode): Comment[] {
+export function extractPostComments(node: ParseNode, ...types: Comment["type"][]): Comment[] {
   if (node?.children?.PostCommentsRule) {
-    return extractAnyComment(node.children.PostCommentsRule[0]);
+    return extractAnyComment(node.children.PostCommentsRule[0], types);
   }
 
   return [];

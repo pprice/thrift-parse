@@ -44,6 +44,38 @@ export function firstPayload<T>(node: ParseNode, ...tokens: TokenName[]): T | un
   return undefined;
 }
 
+export function firstExists(node: ParseNode, ...tokens: TokenName[]): TokenName | undefined {
+  if (!node || !node.children) {
+    return undefined;
+  }
+
+  for (const key of tokens) {
+    const child = node.children[key];
+
+    if (child) {
+      return key;
+    }
+  }
+
+  return undefined;
+}
+
+export function firstImage<T>(node: ParseNode, ...tokens: TokenName[]): string | undefined {
+  if (!node || !node.children) {
+    return undefined;
+  }
+
+  for (const key of tokens) {
+    const child = node.children[key];
+
+    if (child?.[0].image !== undefined) {
+      return child[0].image;
+    }
+  }
+
+  return undefined;
+}
+
 export function identifierOf(node: ParseNode, idx = 0): string | undefined {
   if (!node || !node.children || !node.children.Identifier) {
     return undefined;
