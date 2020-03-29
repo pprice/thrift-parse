@@ -10,7 +10,7 @@ export type StringOutput = {
   content: string;
 };
 
-export type ObjectOutput<TObject extends {}> = {
+export type ObjectOutput<TObject extends {} = {}> = {
   fileHint?: string;
   type: "object";
   value: TObject;
@@ -52,6 +52,8 @@ export type OnBeforeVisitResult<TGenerated, TState = unknown> = {
   generated: TGenerated;
 };
 
+export { NodeName, ParseNode };
+
 export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutput, TGenerated = unknown, TState = unknown> {
   private visitTimer: TimingInfo | null = null;
   protected visits = 0;
@@ -59,7 +61,7 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
   constructor(protected root: ParseNode) {}
 
   async process(): Promise<GeneratorResult<TOutput>> {
-    const { state: rootState, generated: rootGenerated } = await this.onBeforeVisit();
+    const { state: rootState, generated: rootGenerated } = await this.getInitialState();
     const errors: Error[] = [];
     const warnings: Error[] = [];
     const walkTimeHandle = time();
@@ -155,11 +157,13 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
 
   protected abstract getOutputs(rootGenerated?: TGenerated, rootState?: TState): PromiseLike<TOutput[]>;
 
-  protected onBeforeVisit(): PromiseLike<OnBeforeVisitResult<TGenerated, TState> | undefined> {
-    return undefined;
-  }
+  protected abstract getInitialState(): PromiseLike<OnBeforeVisitResult<TGenerated, TState> | undefined>;
 
-  protected abstract getVisitorFunc(nodeName: NodeName): VisitorFunc<TGenerated, TState> | undefined;
+  protected getVisitorFunc(nodeName: NodeName): VisitorFunc<TGenerated, TState> | undefined {
+    const lowerFirst = (nodeName: string): string => `${nodeName[0].toLowerCase()}${nodeName.substring(1)}`;
+
+    return this[nodeName] || this[lowerFirst(nodeName)];
+  }
 
   private attemptVisit(node: ParseNode, parents: ParseNode[], state: TState[], ast: TGenerated[]): InternalVisitResult<TGenerated, TState> {
     const nodeName = node.name || node.tokenType?.name;

@@ -38,6 +38,7 @@
     "babylon": "^6.18.0",
     "chalk": "^3.0.0",
     "chevrotain": "^6.5.0",
+    "json-colorizer": "^2.2.1",
     "recast": "^0.18.7",
     "yargs": "^15.3.0"
   },

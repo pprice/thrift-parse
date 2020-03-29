@@ -5,6 +5,7 @@ import { DefaultCliOptions } from ".";
 import { GeneratorResult } from "../generators/generator";
 import { ParseNode } from "../grammar/nodes";
 import chalk from "chalk";
+import colorize from "json-colorizer";
 import { getGeneratorFactory } from "../generators";
 import { matchAndProcessEach } from "./util";
 
@@ -47,7 +48,7 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
           if (generated.type === "string") {
             log.info(chalk`{whiteBright ${generated.content}}`);
           } else if (generated.type === "object") {
-            log.info(chalk`{whiteBright ${JSON.stringify(generated.value, null, 2)}}`);
+            log.info(colorize(JSON.stringify(generated.value, null, 2)));
           }
         }
 
