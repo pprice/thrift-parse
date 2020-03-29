@@ -1,7 +1,3 @@
-interface CompilerError<T> {
-  __error: never;
-}
-
 /**
  * Creates a type E that is a valid subset of S
  */
