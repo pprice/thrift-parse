@@ -2,7 +2,7 @@ import { Generator } from "./generator";
 import { ParseNode } from "../grammar/nodes";
 import { TsEnumGenerator } from "./recast/ts-enum";
 
-type GeneratorFactory = (root: ParseNode) => Generator;
+type GeneratorFactory = (root: ParseNode, config: GeneratorConfig) => Generator;
 
 export function getGeneratorFactory(name: string): GeneratorFactory | null {
   if (name === "ts-enum") {

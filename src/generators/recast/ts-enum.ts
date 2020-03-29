@@ -1,9 +1,8 @@
 import { EnumValueNode, WithComments, firstPayload, identifierOf } from "../../grammar/nodes";
 import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
+import { b, transformComments } from "./builders";
 
-import { b } from "./builders";
 import { findByName } from "../../grammar/nodes";
-import { transformComments } from "./builders/transform";
 import { types } from "recast";
 
 type EnumState = {
