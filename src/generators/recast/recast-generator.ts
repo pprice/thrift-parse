@@ -1,193 +1,64 @@
 import * as recast from "recast";
 
-import { Generator, GeneratorResult } from "../generator";
-import { TimingInfo, fromMilliseconds, time } from "../../perf-util";
+import { Generator, OnBeforeVisitResult, StringOutput, VisitorFunc, VisitorInput, VisitorResult } from "../generator";
+import { NodeName, ParseNode } from "../../grammar/nodes";
 
-import { ParseNode } from "../../grammar/nodes";
 import { b } from "./builders";
 
-export type VisitResult<T = unknown> = {
-  astNode?: RecastAstNode;
-  state?: T;
-  stop?: boolean;
-  errors?: Error[];
-  warnings?: Error[];
-};
-
-export type RecastVisitorInput<TAst extends RecastAstNode = RecastAstNode, TState = unknown, TNode extends ParseNode = ParseNode> = {
-  node: TNode;
-  state: TState;
-  parentAst: TAst;
-  nodes: ParseNode[];
-  states: unknown[];
-  ast: RecastAstNode[];
-};
-
 export type RecastAstNode = recast.types.namedTypes.Node;
+type ProgramAstNode = recast.types.namedTypes.Program;
 
-type RecastVisitorFunc = (input: RecastVisitorInput) => VisitResult | null;
-type InternalVisitResult = { result: VisitResult; state: unknown[]; ast: RecastAstNode[] };
+export type RecastVisitResult<TState> = VisitorResult<RecastAstNode, TState>;
+export type RecastVisitorInput<
+  TRecastNode extends RecastAstNode = RecastAstNode,
+  TState = unknown,
+  TNode extends ParseNode = ParseNode
+> = VisitorInput<TRecastNode, TState, TNode>;
 
-export abstract class RecastGenerator extends Generator {
-  protected program = b.program([]);
+export abstract class RecastGenerator extends Generator<StringOutput, RecastAstNode> {
   protected abstract readonly type: string;
-  protected visits = 0;
-  private visitTimer: TimingInfo | null = null;
 
   constructor(root: ParseNode) {
     super(root);
   }
 
-  private attemptVisit(node: ParseNode, parents: ParseNode[], state: unknown[], ast: RecastAstNode[]): InternalVisitResult {
-    const nodeName = node.name || node.tokenType?.name;
-    let result: VisitResult = null;
-
-    if (nodeName) {
-      const func: RecastVisitorFunc = this[nodeName];
-
-      if (func) {
-        const timeHandle = time(this.visitTimer);
-        const input: RecastVisitorInput = {
-          node: node,
-          state: state[0] || null,
-          parentAst: ast[0] || null,
-          nodes: parents,
-          states: state,
-          ast: ast
-        };
-
-        result = func.apply(this, [input]);
-        this.visits++;
-
-        if (result?.astNode) {
-          ast = [result.astNode, ...ast];
-        }
-        if (result?.state) {
-          state = [result.state, ...state];
-        }
-        this.visitTimer = timeHandle();
-      } else {
-        // console.log(`No handler for ${nodeName}`);
-      }
-    }
+  protected async onBeforeVisit(): Promise<OnBeforeVisitResult<RecastAstNode>> {
+    const generated = b.program([]);
+    generated.body = [];
+    generated.comments = [];
 
     return {
-      result,
-      state,
-      ast
+      state: null,
+      generated
     };
   }
 
-  public async process(): Promise<GeneratorResult> {
-    this.program.comments = [];
-    this.program.body = [];
+  protected getVisitorFunc(nodeName: NodeName): VisitorFunc<RecastAstNode> | undefined {
+    return this[nodeName];
+  }
 
-    const errors: Error[] = [];
-    const warnings: Error[] = [];
-    const walkTimeHandle = time();
-
-    type TreeStackNode = { node: ParseNode; parents: ParseNode[]; state: unknown[]; ast: RecastAstNode[] };
-
-    // Wrapped visit method which will populate errors and warnings into global generator state
-    const visit = (node: ParseNode, parent: ParseNode[], state: unknown[], ast: RecastAstNode[]): InternalVisitResult => {
-      let visitResult: InternalVisitResult = null;
-      // try {
-      visitResult = this.attemptVisit(node, parent, state, ast);
-      // } catch (e) {
-      //   errors.push(e);
-      // }
-
-      if (visitResult?.result?.errors) {
-        errors.concat(...visitResult.result.errors);
-      }
-      if (visitResult?.result?.warnings) {
-        warnings.concat(...visitResult.result.warnings);
-      }
-
-      return visitResult;
-    };
-
-    // Visit the root node explicitly
-    // TODO: Not very clean to ignore children, but... we need to ensure order of the roots children
-    // when visiting
-    const rootVisit = visit(this.root, [], [], [this.program]);
-
-    if (!rootVisit?.result?.stop) {
-      const mapRootRule = (parseNode: ParseNode[]): TreeStackNode[] => {
-        if (!parseNode) {
-          return [];
-        }
-
-        return parseNode.map(i => ({ node: i, parents: [this.root], state: rootVisit.state, ast: rootVisit.ast }));
-      };
-
-      // Ensure order of top level items, as the root rule is ordered by node name
-      const treeStack: TreeStackNode[] = [
-        ...mapRootRule(this.root.children.CommentsRule),
-        ...mapRootRule(this.root.children.HeaderRule),
-        ...mapRootRule(this.root.children.DefinitionRule),
-        ...mapRootRule(this.root.children.PostCommentsRule)
-      ].filter(Boolean);
-
-      // Depth first walk of tree
-      while (treeStack.length > 0) {
-        // eslint-disable-next-line prefer-const
-        let { node, state, ast, parents } = treeStack.pop();
-        const v = visit(node, parents, state, ast);
-
-        if (v?.result?.stop === true) {
-          // If a visit tells us it halt it's sub tree; then do so
-          continue;
-        }
-
-        const childKeys = node.children && Object.keys(node.children);
-        const hasChildren = childKeys?.length;
-
-        if (!hasChildren) {
-          continue;
-        }
-
-        // CstNode
-        for (const key of childKeys) {
-          const childNode: unknown[] = node.children[key];
-
-          // NOTE: Children need to be reverse so when they enter the stack they are enumerated in the expected order
-          const next: TreeStackNode[] = childNode
-            .map(i => ({ node: i, parents: [node, ...parents], state: [...v.state], ast: [...v.ast] }))
-            .reverse();
-
-          treeStack.push(...next);
-        }
-      }
+  protected async getOutputs(program?: ProgramAstNode): Promise<StringOutput[]> {
+    if (!program) {
+      return [];
     }
 
-    if (this.program.body.length > 0) {
-      this.program.comments.unshift(b.commentLine(` @autogenerated Generated by ${this.constructor.name}`, false, true));
+    if (program.body.length > 0) {
+      program.comments.unshift(b.commentLine(` @autogenerated Generated by ${this.constructor.name}`, false, true));
     }
 
-    const walkTime = walkTimeHandle();
-    const printTimeHandle = time();
-    const output = recast.prettyPrint(this.program);
-    const printTime = printTimeHandle();
+    const output = recast.prettyPrint(program);
 
-    return {
-      errors,
-      warnings,
-      content: [
-        {
-          type: this.type,
-          content: output.code
-        },
-        {
-          type: "map",
-          content: output.map
-        }
-      ],
-      performance: {
-        Walk: walkTime,
-        Visit: this.visitTimer || fromMilliseconds(0),
-        Print: printTime
+    return [
+      {
+        type: "string",
+        fileExtensionHint: this.type,
+        content: output.code
+      },
+      {
+        type: "string",
+        fileExtensionHint: this.type,
+        content: output.map
       }
-    };
+    ];
   }
 }

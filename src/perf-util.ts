@@ -11,6 +11,8 @@ export type TimingInfo = {
   seconds: number;
   minutes: number;
   format: () => TimingInfoFormat;
+  subtract(info: TimingInfo): TimingInfo;
+  add(info: TimingInfo): TimingInfo;
 };
 
 function createFormatter(minutes: number, seconds: number, milliseconds: number): () => { value: number; unitShort: string; unit: string } {
@@ -43,7 +45,9 @@ export function fromMilliseconds(milliseconds: number): TimingInfo {
     milliseconds,
     seconds,
     minutes,
-    format: createFormatter(minutes, seconds, milliseconds)
+    format: createFormatter(minutes, seconds, milliseconds),
+    add: (other: TimingInfo): TimingInfo => fromMilliseconds(milliseconds + other.milliseconds),
+    subtract: (other: TimingInfo): TimingInfo => fromMilliseconds(milliseconds - other.milliseconds)
   };
 }
 

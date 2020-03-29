@@ -40,12 +40,14 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
 
       if (generatorResult.errors?.length == 0) {
         let generatedWithContent = 0;
-        for (const generated of generatorResult.content) {
-          if (generated.content) {
-            generatedWithContent++;
-            log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
-            log.separator();
+        for (const generated of generatorResult.output) {
+          generatedWithContent++;
+          log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
+          log.separator();
+          if (generated.type === "string") {
             log.info(chalk`{whiteBright ${generated.content}}`);
+          } else if (generated.type === "object") {
+            log.info(chalk`{whiteBright ${JSON.stringify(generated.value, null, 2)}}`);
           }
         }
 

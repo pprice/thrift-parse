@@ -1,5 +1,5 @@
 import { EnumValueNode, WithComments, firstPayload, identifierOf } from "../../grammar/nodes";
-import { RecastGenerator, RecastVisitorInput, VisitResult } from "./recast-generator";
+import { RecastGenerator, RecastVisitResult, RecastVisitorInput } from "./recast-generator";
 import { b, transformComments } from "./builders";
 
 import { findByName } from "../../grammar/nodes";
@@ -12,7 +12,7 @@ type EnumState = {
 export class TsEnumGenerator extends RecastGenerator {
   protected type = "ts";
 
-  protected EnumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): VisitResult<EnumState> {
+  protected EnumRule({ node, parentAst, nodes }: RecastVisitorInput<types.namedTypes.Program>): RecastVisitResult<EnumState> {
     const id = identifierOf(node);
     const enumDeclaration = b.tsEnumDeclaration(b.identifier(id), []);
     const exported = b.exportNamedDeclaration(enumDeclaration);
@@ -33,7 +33,7 @@ export class TsEnumGenerator extends RecastGenerator {
     node,
     state,
     parentAst
-  }: RecastVisitorInput<types.namedTypes.TSEnumDeclaration, EnumState, EnumValueNode>): VisitResult<EnumState> {
+  }: RecastVisitorInput<types.namedTypes.TSEnumDeclaration, EnumState, EnumValueNode>): RecastVisitResult<EnumState> {
     // The behavior of enum values is to use the value specified for the enum member, if none
     // start increment the previous value by one; if there is no previous value start at 0
 
