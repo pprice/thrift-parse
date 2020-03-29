@@ -1,4 +1,4 @@
-import { NodeName, ParseNode, RuleName } from "../grammar/nodes";
+import { NodeName, ParseNode } from "../grammar/nodes";
 import { TimingInfo, fromMilliseconds, time } from "../perf-util";
 
 export type GeneratorConfig = {};

@@ -1,6 +1,5 @@
 import {
   AnnotationNode,
-  RefType,
   ThriftAstRoot,
   ThriftConstant,
   ThriftEnum,
@@ -11,8 +10,7 @@ import {
   ThriftService,
   ThriftStruct,
   ThriftType,
-  ThriftTypedef,
-  TypeKeys
+  ThriftTypedef
 } from "./types";
 import {
   EnumValueNode,
@@ -147,7 +145,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     let value: number = firstPayload(node, "HexConst", "IntegerConst");
 
     // TODO: Consider refactoring grammar to have assignment RHS in an isolated node
-    const assignedId: string = identifierOf(node, 1);
+    // const assignedId: string = identifierOf(node, 1);
 
     if (value == undefined) {
       value = ++state.lastMemberIndex;
@@ -215,7 +213,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     return PassResult;
   }
 
-  protected baseTypeRule({ node, parentAst, nodes }: Input<ThriftType>): Result {
+  protected baseTypeRule({ node, parentAst }: Input<ThriftType>): Result {
     const typeNode = firstExists(node, "I16", "I32", "I64", "Bool", "Byte", "Binary", "String", "Double");
 
     parentAst.typeId = BaseTypeMap[typeNode];
@@ -225,7 +223,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected constValueRule({ node, parentAst, nodes }: Input<ThriftConstant>): Result {
+  protected constValueRule({ node, parentAst }: Input<ThriftConstant>): Result {
     // TODO: Boolean const
     const identifier = identifierOf(node);
 
@@ -371,7 +369,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected functionThrowsRule({ node, parentAst }: Input<ThriftFunction>): Result<State> {
+  protected functionThrowsRule({ parentAst }: Input<ThriftFunction>): Result<State> {
     return {
       state: {
         fieldTarget: (): ThriftField[] => parentAst.exceptions

@@ -8,6 +8,7 @@
     "watch": "tsc -w -p .",
     "clean": "rimraf dist tmp",
     "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint --fix . --ext .ts",
     "test": "jest",
     "util:gen-diagram": "ts-node ./scripts/generate-diagram.ts"
   },

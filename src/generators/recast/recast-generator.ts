@@ -1,6 +1,6 @@
 import * as recast from "recast";
 
-import { Generator, NodeName, OnBeforeVisitResult, ParseNode, StringOutput, VisitorFunc, VisitorInput, VisitorResult } from "../generator";
+import { Generator, OnBeforeVisitResult, ParseNode, StringOutput, VisitorInput, VisitorResult } from "../generator";
 
 import { b } from "./builders";
 
