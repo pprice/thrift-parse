@@ -15,6 +15,10 @@ export function isStringAssignable(name: TypeName): boolean {
   return name === "String" || name === "Binary";
 }
 
+export function isBooleanAssignable(name: TypeName): boolean {
+  return name === "Bool";
+}
+
 export function isDoubleAssignable(name: TypeName): boolean {
   return name === "Double";
 }

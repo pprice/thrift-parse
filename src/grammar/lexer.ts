@@ -4,6 +4,11 @@ import { Lexer as CTLexer, ITokenConfig, TokenType, createToken } from "chevrota
 
 const Patterns = {
   /**
+   * Boolean literal pattern
+   */
+  BooleanLiteralPattern: /true|false/y,
+
+  /**
    * String literal pattern.
    *
    * Quirks.
@@ -157,6 +162,12 @@ export class ThriftTokens {
   StringLiteral = createToken({
     name: "StringLiteral",
     pattern: this.makeRegexPayloadMatcher(Patterns.StringLiteralPattern, match => match.substr(1, match.length - 2)),
+    line_breaks: false
+  });
+
+  BooleanLiteral = createToken({
+    name: "BooleanLiteral",
+    pattern: this.makeRegexPayloadMatcher(Patterns.BooleanLiteralPattern, match => (match === "true" ? true : false)),
     line_breaks: false
   });
 
@@ -394,7 +405,7 @@ export class ThriftTokens {
   });
 
   OneWay = this.createKeywordToken({
-    name: "Oneway",
+    name: "OneWay",
     pattern: /oneway/
   });
 
@@ -457,6 +468,7 @@ export class ThriftTokens {
     this.Ampersand, // Used for recursive structures
     this.Wildcard, // Only used for namespaces
     // Constants
+    this.BooleanLiteral,
     this.StringLiteral,
     this.DoubleConst, // NOTE: We need to attempt to tokenize doubles before integers as they are ambiguous
     this.HexConst,

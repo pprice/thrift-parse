@@ -4,6 +4,7 @@ import { CstParser, TokenType } from "chevrotain";
 import {
   TypeName,
   findTypeName,
+  isBooleanAssignable,
   isDoubleAssignable,
   isIntegerAssignable,
   isListAssignable,
@@ -35,6 +36,7 @@ export type TRules = {
   TypeDef: "TypeDefRule";
   Service: "ServiceRule";
   Function: "FunctionRule";
+  FunctionThrows: "FunctionThrowsRule";
   Annotation: "AnnotationRule";
   Annotations: "AnnotationsRule";
   ConstValue: "ConstValueRule";
@@ -73,6 +75,7 @@ const Rules: TRules = {
   TypeDef: "TypeDefRule",
   Service: "ServiceRule",
   Function: "FunctionRule",
+  FunctionThrows: "FunctionThrowsRule",
   Annotation: "AnnotationRule",
   Annotations: "AnnotationsRule",
   ConstValue: "ConstValueRule",
@@ -119,11 +122,11 @@ export class ThriftCstParser extends CstParser {
      */
     return this.RULE(name, () => {
       this.CONSUME(keywordToken);
-      this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+      this.CONSUME(Tokens.Identifier);
       this.CONSUME(Tokens.LCurly);
-      this.MANY(() => this.SUBRULE(this.field, { LABEL: "fields" }));
+      this.MANY(() => this.SUBRULE(this.field));
       this.CONSUME(Tokens.RCurly);
-      this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+      this.OPTION(() => this.SUBRULE(this.annotations));
     });
   }
 
@@ -177,17 +180,14 @@ export class ThriftCstParser extends CstParser {
 
   private include = this.RULE(Rules.Include, () => {
     this.CONSUME(Tokens.Include);
-    this.CONSUME(Tokens.StringLiteral, { LABEL: "source" });
+    this.CONSUME(Tokens.StringLiteral);
   });
 
   private namespace = this.RULE(Rules.Namespace, () => {
     this.CONSUME(Tokens.Namespace);
-    this.OR([
-      { ALT: () => this.CONSUME1(Tokens.Identifier, { LABEL: "scope" }) },
-      { ALT: () => this.CONSUME(Tokens.Wildcard, { LABEL: "scope" }) }
-    ]);
-    this.CONSUME2(Tokens.Identifier, { LABEL: "id" });
-    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.OR([{ ALT: () => this.CONSUME1(Tokens.Identifier) }, { ALT: () => this.CONSUME(Tokens.Wildcard) }]);
+    this.CONSUME2(Tokens.Identifier);
+    this.OPTION(() => this.SUBRULE(this.annotations));
   });
 
   private cppInclude = this.RULE(Rules.CPPInclude, () => {
@@ -213,7 +213,7 @@ export class ThriftCstParser extends CstParser {
 
   private fieldId = this.RULE(Rules.FieldId, () => {
     this.SUBRULE(this.comments, { ARGS: [false] });
-    this.CONSUME(Tokens.IntegerConst, { LABEL: "id" });
+    this.CONSUME(Tokens.IntegerConst);
     this.CONSUME(Tokens.Colon);
   });
 
@@ -228,18 +228,18 @@ export class ThriftCstParser extends CstParser {
      */
     this.SUBRULE(this.comments);
     this.OPTION(() => {
-      this.OPTION1(() => this.SUBRULE(this.fieldId, { LABEL: "id" }));
-      this.OPTION2(() => this.SUBRULE(this.fieldReq, { LABEL: "req" }));
+      this.OPTION1(() => this.SUBRULE(this.fieldId));
+      this.OPTION2(() => this.SUBRULE(this.fieldReq));
       const type = findTypeName(this.SUBRULE1(this.type) as ParseNode);
 
-      this.OPTION3(() => this.CONSUME(Tokens.Ampersand, { LABEL: "reference" }));
+      this.OPTION3(() => this.CONSUME(Tokens.Ampersand));
 
-      this.CONSUME1(Tokens.Identifier, { LABEL: "identifier" });
+      this.CONSUME1(Tokens.Identifier);
       this.OPTION4(() => {
         this.CONSUME3(Tokens.Assignment);
         this.SUBRULE3(this.constValue, { ARGS: [type, "field"] });
       });
-      this.OPTION5(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+      this.OPTION5(() => this.SUBRULE(this.annotations));
       this.OPTION6(() => this.CONSUME(Tokens.ListSeparator));
     });
   });
@@ -310,18 +310,18 @@ export class ThriftCstParser extends CstParser {
 
   private typedef = this.RULE(Rules.TypeDef, () => {
     this.CONSUME(Tokens.Typedef);
-    this.SUBRULE(this.type, { LABEL: "type" });
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
-    this.OPTION(() => this.SUBRULE(this.annotations, { LABEL: "annotations" }));
+    this.SUBRULE(this.type);
+    this.CONSUME(Tokens.Identifier);
+    this.OPTION(() => this.SUBRULE(this.annotations));
     this.OPTION2(() => this.CONSUME(Tokens.ListSeparator));
   });
 
   private service = this.RULE(Rules.Service, () => {
     this.CONSUME(Tokens.Service);
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.Identifier);
     this.OPTION2(() => {
       this.CONSUME2(Tokens.Extends);
-      this.CONSUME2(Tokens.Identifier, { LABEL: "base_id" });
+      this.CONSUME2(Tokens.Identifier);
     });
     this.CONSUME(Tokens.LCurly);
     this.MANY(() => this.SUBRULE(this.functionDeclaration, { LABEL: "function" }));
@@ -331,30 +331,36 @@ export class ThriftCstParser extends CstParser {
 
   private functionDeclaration = this.RULE(Rules.Function, () => {
     this.SUBRULE(this.comments);
-    this.OPTION1(() => this.CONSUME(Tokens.OneWay, { LABEL: "oneway" }));
+    this.OPTION1(() => this.CONSUME(Tokens.OneWay));
     this.OR([{ ALT: () => this.SUBRULE(this.type) }, { ALT: () => this.CONSUME(Tokens.Void) }]);
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.Identifier);
     this.CONSUME(Tokens.LParen);
     this.MANY(() => this.SUBRULE(this.field));
 
     this.CONSUME(Tokens.RParen);
-    this.OPTION2(() => {
-      this.CONSUME2(Tokens.Throws, { LABEL: "throws" });
-      this.CONSUME2(Tokens.LParen);
-      this.MANY2(() => this.SUBRULE2(this.field));
-      this.CONSUME2(Tokens.RParen);
-    });
+
+    this.SUBRULE(this.functionThrows);
+
     this.OPTION3(() => this.SUBRULE(this.annotations));
     this.OPTION4(() => this.CONSUME(Tokens.ListSeparator));
     this.SUBRULE2(this.comments);
   });
 
+  private functionThrows = this.RULE(Rules.FunctionThrows, () => {
+    this.OPTION(() => {
+      this.CONSUME(Tokens.Throws);
+      this.CONSUME(Tokens.LParen);
+      this.MANY(() => this.SUBRULE(this.field));
+      this.CONSUME(Tokens.RParen);
+    });
+  });
+
   private annotation = this.RULE(Rules.Annotation, () => {
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    this.CONSUME(Tokens.Identifier);
 
     this.OPTION(() => {
       this.CONSUME(Tokens.Assignment);
-      this.CONSUME(Tokens.StringLiteral, { LABEL: "value" });
+      this.CONSUME(Tokens.StringLiteral);
     });
 
     this.OPTION2(() => this.CONSUME(Tokens.Comma));
@@ -375,6 +381,7 @@ export class ThriftCstParser extends CstParser {
     this.OR({
       DEF: [
         // If the incoming type assignment is known; gate options to be valid (e.g. cant assign a string to an i32)
+        { GATE: () => skipCheck || isBooleanAssignable(knownType), ALT: () => this.CONSUME(Tokens.BooleanLiteral) },
         { GATE: () => skipCheck || isStringAssignable(knownType), ALT: () => this.CONSUME(Tokens.StringLiteral) },
         { GATE: () => skipCheck || isIntegerAssignable(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
         { GATE: () => skipCheck || isIntegerAssignable(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntegerConst) },
@@ -483,10 +490,10 @@ export class ThriftCstParser extends CstParser {
 
   private constDefinition = this.RULE(Rules.Const, () => {
     this.CONSUME(Tokens.Const);
-    const type = findTypeName(this.SUBRULE(this.type, { LABEL: "value_type" }) as ParseNode);
-    this.CONSUME(Tokens.Identifier, { LABEL: "id" });
+    const type = findTypeName(this.SUBRULE(this.type) as ParseNode);
+    this.CONSUME(Tokens.Identifier);
     this.CONSUME(Tokens.Assignment);
-    this.SUBRULE(this.constValue, { LABEL: "value", ARGS: [type, "const"] });
+    this.SUBRULE(this.constValue);
 
     // It is possible to have a semi-colon at the end of a const statement;
     // just consume it and move forward
