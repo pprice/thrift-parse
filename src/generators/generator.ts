@@ -1,6 +1,8 @@
 import { ParseNode } from "../grammar/nodes";
 import { TimingInfo } from "../perf-util";
 
+export type GeneratorConfig = {};
+
 export type GeneratorContent = {
   fileHint?: string;
   type: string;

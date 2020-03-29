@@ -35,7 +35,7 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
       const detailedParseErrors = buildParseErrors(content, parseResult.errors.parse);
       outputParseErrors(match, detailedParseErrors, parseResult, log);
     } else {
-      const generator = generatorFactory(parseResult.cst as ParseNode);
+      const generator = generatorFactory(parseResult.cst as ParseNode, null);
       generatorResult = await generator.process();
 
       if (generatorResult.errors?.length == 0) {
