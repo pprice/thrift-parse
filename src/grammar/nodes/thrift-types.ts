@@ -8,7 +8,7 @@ export type IdentifierTypeName = Extends<TokenName, "Identifier">;
 export type TypeName = BaseTypeName | ContainerTypeName | IdentifierTypeName;
 
 export function isIntegerAssignable(name: TypeName): boolean {
-  return name === "I16" || name === "I32" || name === "I64" || name === "Double";
+  return name === "Byte" || name === "Bool" || name === "I16" || name === "I32" || name === "I64" || name === "Double";
 }
 
 export function isStringAssignable(name: TypeName): boolean {
@@ -46,6 +46,8 @@ function baseTypeNodeToTypeName(node: ParseNode): BaseTypeName | null {
     return "Binary";
   } else if (node.children.String) {
     return "String";
+  } else if (node.children.Bool) {
+    return "Bool";
   }
 
   return null;

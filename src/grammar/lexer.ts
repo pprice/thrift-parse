@@ -6,7 +6,7 @@ const Patterns = {
   /**
    * Boolean literal pattern
    */
-  BooleanLiteralPattern: /true|false/y,
+  BooleanConstPattern: /true|false/y,
 
   /**
    * String literal pattern.
@@ -159,15 +159,14 @@ export class ThriftTokens {
     group: CTLexer.SKIPPED
   });
 
+  Identifier = createToken({
+    name: "Identifier",
+    pattern: /[A-Za-z_](\.[A-Za-z_0-9]|[A-Za-z_0-9])*/
+  });
+
   StringLiteral = createToken({
     name: "StringLiteral",
     pattern: this.makeRegexPayloadMatcher(Patterns.StringLiteralPattern, match => match.substr(1, match.length - 2)),
-    line_breaks: false
-  });
-
-  BooleanLiteral = createToken({
-    name: "BooleanLiteral",
-    pattern: this.makeRegexPayloadMatcher(Patterns.BooleanLiteralPattern, match => (match === "true" ? true : false)),
     line_breaks: false
   });
 
@@ -191,6 +190,13 @@ export class ThriftTokens {
     name: "DoubleConst",
     pattern: this.makeRegexPayloadMatcher(Patterns.DoubleConstPattern, match => Number.parseFloat(match)),
     line_breaks: false
+  });
+
+  BooleanConst = createToken({
+    name: "BooleanConst",
+    pattern: this.makeRegexPayloadMatcher(Patterns.BooleanConstPattern, match => (match === "true" ? true : false)),
+    line_breaks: false,
+    longer_alt: this.Identifier
   });
 
   Assignment = createToken({
@@ -282,11 +288,6 @@ export class ThriftTokens {
     name: "Ampersand",
     pattern: /&/,
     label: "*&"
-  });
-
-  Identifier = createToken({
-    name: "Identifier",
-    pattern: /[A-Za-z_](\.[A-Za-z_0-9]|[A-Za-z_0-9])*/
   });
 
   Include = this.createKeywordToken({
@@ -468,7 +469,7 @@ export class ThriftTokens {
     this.Ampersand, // Used for recursive structures
     this.Wildcard, // Only used for namespaces
     // Constants
-    this.BooleanLiteral,
+    this.BooleanConst,
     this.StringLiteral,
     this.DoubleConst, // NOTE: We need to attempt to tokenize doubles before integers as they are ambiguous
     this.HexConst,

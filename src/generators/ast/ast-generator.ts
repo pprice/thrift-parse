@@ -236,7 +236,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
       };
     }
 
-    const basicValue = firstPayload(node, "StringLiteral", "HexConst", "IntegerConst", "DoubleConst", "BooleanLiteral");
+    const basicValue = firstPayload(node, "StringLiteral", "HexConst", "IntegerConst", "DoubleConst", "BooleanConst");
     parentAst.value = basicValue || null;
 
     return {

@@ -381,11 +381,11 @@ export class ThriftCstParser extends CstParser {
     this.OR({
       DEF: [
         // If the incoming type assignment is known; gate options to be valid (e.g. cant assign a string to an i32)
-        { GATE: () => skipCheck || isBooleanAssignable(knownType), ALT: () => this.CONSUME(Tokens.BooleanLiteral) },
         { GATE: () => skipCheck || isStringAssignable(knownType), ALT: () => this.CONSUME(Tokens.StringLiteral) },
         { GATE: () => skipCheck || isIntegerAssignable(knownType), ALT: () => this.CONSUME(Tokens.HexConst) },
         { GATE: () => skipCheck || isIntegerAssignable(knownType) || knownType === "Double", ALT: () => this.CONSUME(Tokens.IntegerConst) },
         { GATE: () => skipCheck || isDoubleAssignable(knownType), ALT: () => this.CONSUME(Tokens.DoubleConst) },
+        { GATE: () => skipCheck || isBooleanAssignable(knownType), ALT: () => this.CONSUME(Tokens.BooleanConst) },
         { GATE: () => skipCheck || isMapAssignable(knownType), ALT: () => this.SUBRULE(this.mapConst) },
         { GATE: () => skipCheck || isListAssignable(knownType), ALT: () => this.SUBRULE(this.listConst) },
         { ALT: () => this.CONSUME(Tokens.Identifier) }
@@ -493,7 +493,7 @@ export class ThriftCstParser extends CstParser {
     const type = findTypeName(this.SUBRULE(this.type) as ParseNode);
     this.CONSUME(Tokens.Identifier);
     this.CONSUME(Tokens.Assignment);
-    this.SUBRULE(this.constValue);
+    this.SUBRULE(this.constValue, { ARGS: [type] });
 
     // It is possible to have a semi-colon at the end of a const statement;
     // just consume it and move forward
