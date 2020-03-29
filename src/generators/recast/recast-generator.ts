@@ -1,7 +1,6 @@
 import * as recast from "recast";
 
-import { Generator, OnBeforeVisitResult, StringOutput, VisitorFunc, VisitorInput, VisitorResult } from "../generator";
-import { NodeName, ParseNode } from "../../grammar/nodes";
+import { Generator, NodeName, OnBeforeVisitResult, ParseNode, StringOutput, VisitorFunc, VisitorInput, VisitorResult } from "../generator";
 
 import { b } from "./builders";
 
@@ -22,7 +21,7 @@ export abstract class RecastGenerator extends Generator<StringOutput, RecastAstN
     super(root);
   }
 
-  protected async onBeforeVisit(): Promise<OnBeforeVisitResult<RecastAstNode>> {
+  protected async getInitialState(): Promise<OnBeforeVisitResult<RecastAstNode>> {
     const generated = b.program([]);
     generated.body = [];
     generated.comments = [];
@@ -31,10 +30,6 @@ export abstract class RecastGenerator extends Generator<StringOutput, RecastAstN
       state: null,
       generated
     };
-  }
-
-  protected getVisitorFunc(nodeName: NodeName): VisitorFunc<RecastAstNode> | undefined {
-    return this[nodeName];
   }
 
   protected async getOutputs(program?: ProgramAstNode): Promise<StringOutput[]> {
