@@ -40,12 +40,20 @@ export class TsEnumGenerator extends RecastGenerator {
     const id = identifierOf(node);
     let value: number = firstPayload(node, "HexConst", "IntegerConst");
 
+    // TODO: Consider refactoring grammar to have assignment RHS in an isolated node
+    const assignedId: string = identifierOf(node, 1);
+
     if (value == undefined) {
       value = ++state.lastMemberIndex;
     }
 
     const enumMember = b.tsEnumMember(b.identifier(id), b.literal(value));
     enumMember.comments = transformComments(node);
+
+    if (assignedId) {
+      enumMember.comments.push(b.commentLine(`From ${assignedId}`, false, true));
+    }
+
     parentAst.members.push(enumMember);
 
     state.lastMemberIndex = value;

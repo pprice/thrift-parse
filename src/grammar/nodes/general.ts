@@ -12,6 +12,22 @@ export function collectPayloads<T = string>(tokens: IToken[], filter = true): (T
   return mapped;
 }
 
+export function child(node: ParseNode, ...tokens: TokenName[]): ParseNode | undefined {
+  if (!node || !node.children) {
+    return undefined;
+  }
+
+  for (const key of tokens) {
+    const child = node.children[key];
+
+    if (child?.[0]) {
+      return child[0] as ParseNode;
+    }
+  }
+
+  return undefined;
+}
+
 export function firstPayload<T>(node: ParseNode, ...tokens: TokenName[]): T | undefined {
   if (!node || !node.children) {
     return undefined;
