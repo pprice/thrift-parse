@@ -66,8 +66,8 @@ export function extractComments(node: ParseNode, ...types: Comment["type"][]): C
 }
 
 export function extractPostComments(node: ParseNode, ...types: Comment["type"][]): Comment[] {
-  if (node?.children?.PostCommentsRule) {
-    return extractAnyComment(node.children.PostCommentsRule[0], types);
+  if (node?.children?.PostCommentsLabel) {
+    return extractAnyComment(node.children.PostCommentsLabel[0], types);
   }
 
   return [];

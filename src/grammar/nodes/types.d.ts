@@ -1,23 +1,25 @@
-import { RuleName as ParserRuleName } from "../parser";
+import { RuleName as ParserRuleName, LabelName as ParserLabelName } from "../parser";
 import { TokenName as LexerTokenName } from "../lexer";
 import { IToken as CIToken, TokenType } from "chevrotain";
 
 export type RuleName = ParserRuleName;
 export type TokenName = LexerTokenName;
-export type NodeName = RuleName | TokenName;
+export type LabelName = ParserLabelName;
+export type NodeName = RuleName | TokenName | ParserLabelName;
 
 export type IToken = CIToken;
 
 type RuleChildren = { [key in RuleName]?: ParseNode[] };
+type LabelChildren = { [key in LabelName]?: ParseNode[] };
 type TokenChildren = { [key in TokenName]?: IToken[] };
-type NodeChildren = RuleChildren & TokenChildren;
+type NodeChildren = RuleChildren & LabelChildren & TokenChildren;
 
 type BaseParseNode = {
-  name?: RuleName;
+  name?: RuleName | LabelName;
 };
 
 export type ParseNode = {
-  name?: RuleName;
+  name?: RuleName | TokenName;
   children?: NodeChildren;
   tokenType?: TokenType & {
     name: TokenName;

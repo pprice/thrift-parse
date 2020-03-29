@@ -53,7 +53,7 @@ export type ListType = {
   type: {
     typeId: "list";
     elementTypeId: TypeKeys;
-    elementType: ThriftType;
+    elementType?: ThriftType;
   };
 };
 
@@ -62,7 +62,7 @@ export type SetType = {
   type: {
     typeId: "set";
     elementTypeId: TypeKeys;
-    elementType: ThriftType;
+    elementType?: ThriftType;
   };
 };
 
@@ -71,9 +71,9 @@ export type MapType = {
   type: {
     typeId: "map";
     valueTypeId: TypeKeys;
-    valueType: ThriftType;
-    elementTypeId: TypeKeys;
-    elementType: ThriftType;
+    valueType?: ThriftType;
+    keyTypeId: TypeKeys;
+    keyType?: ThriftType;
   };
 };
 

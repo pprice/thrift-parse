@@ -49,14 +49,15 @@ export type TRules = {
   DefinitionType: "DefinitionTypeRule";
   Type: "TypeRule";
   MapType: "MapTypeRule";
+  MapKeyType: "MapKeyTypeRule";
+  MapValueType: "MapValueTypeRule";
   ListType: "ListTypeRule";
   SetType: "SetTypeRule";
   Const: "ConstRule";
   Comments: "CommentsRule";
-  PostComments: "PostCommentsRule";
 };
 
-const Rules: TRules = {
+export const Rules: TRules = {
   Root: "RootRule",
   Header: "HeaderRule",
   Include: "IncludeRule",
@@ -88,14 +89,29 @@ const Rules: TRules = {
   DefinitionType: "DefinitionTypeRule",
   Type: "TypeRule",
   MapType: "MapTypeRule",
+  MapKeyType: "MapKeyTypeRule",
+  MapValueType: "MapValueTypeRule",
   ListType: "ListTypeRule",
   SetType: "SetTypeRule",
   Const: "ConstRule",
-  Comments: "CommentsRule",
-  PostComments: "PostCommentsRule"
+  Comments: "CommentsRule"
 };
 
 export type RuleName = TRules[keyof TRules];
+
+type TLabels = {
+  MapKeyType: "MapKeyTypeLabel";
+  MapValueType: "MapValueTypeLabel";
+  PostComments: "PostCommentsLabel";
+};
+
+const Labels: TLabels = {
+  MapKeyType: "MapKeyTypeLabel",
+  MapValueType: "MapValueTypeLabel",
+  PostComments: "PostCommentsLabel"
+};
+
+export type LabelName = TLabels[keyof TLabels];
 
 /**
  * Reference: https://thrift.apache.org/docs/idl
@@ -152,7 +168,7 @@ export class ThriftCstParser extends CstParser {
       this.SUBRULE2(this.definition);
     });
 
-    this.SUBRULE2(this.comments, { LABEL: Rules.PostComments });
+    this.SUBRULE2(this.comments, { LABEL: Labels.PostComments });
   });
 
   private comments = this.RULE(Rules.Comments, (allowSingleLine = true) => {
@@ -464,18 +480,28 @@ export class ThriftCstParser extends CstParser {
 
   private mapType = this.RULE(Rules.MapType, () => {
     this.CONSUME(Tokens.Map);
-    this.OPTION(() => this.SUBRULE(this.cppType, { LABEL: "cpp_type" }));
+    this.OPTION(() => this.SUBRULE(this.cppType));
     this.CONSUME(Tokens.LTemplate);
-    this.SUBRULE1(this.type, { LABEL: "key_type" });
+    this.SUBRULE1(this.mapKeyType);
     this.CONSUME(Tokens.Comma);
-    this.SUBRULE2(this.type, { LABEL: "value_type" });
+    this.SUBRULE2(this.mapValueType);
     this.CONSUME(Tokens.RTemplate);
+  });
+
+  private mapKeyType = this.RULE(Rules.MapKeyType, () => {
+    // NOTE: This is just for ast generation to disambiguate between lhs and rhs types
+    this.SUBRULE(this.type);
+  });
+
+  private mapValueType = this.RULE(Rules.MapValueType, () => {
+    // NOTE: This is just for ast generation to disambiguate between lhs and rhs types
+    this.SUBRULE(this.type);
   });
 
   private listType = this.RULE(Rules.ListType, () => {
     this.CONSUME(Tokens.List);
     this.CONSUME(Tokens.LTemplate);
-    this.SUBRULE(this.type, { LABEL: "value_type" });
+    this.SUBRULE(this.type);
     this.CONSUME(Tokens.RTemplate);
     this.OPTION(() => this.SUBRULE(this.cppType));
   });

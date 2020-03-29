@@ -56,6 +56,7 @@ export { NodeName, ParseNode };
 
 export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutput, TGenerated = unknown, TState = unknown> {
   private visitTimer: TimingInfo | null = null;
+  private handlerMisses: Set<string> = new Set();
   protected visits = 0;
 
   constructor(protected root: ParseNode) {}
@@ -103,7 +104,7 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
         ...mapRootRule(this.root.children.CommentsRule),
         ...mapRootRule(this.root.children.HeaderRule),
         ...mapRootRule(this.root.children.DefinitionRule),
-        ...mapRootRule(this.root.children.PostCommentsRule)
+        ...mapRootRule(this.root.children.PostCommentsLabel)
       ].filter(Boolean);
 
       // Depth first walk of tree
@@ -160,9 +161,19 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
   protected abstract getInitialState(): PromiseLike<OnBeforeVisitResult<TGenerated, TState> | undefined>;
 
   protected getVisitorFunc(nodeName: NodeName): VisitorFunc<TGenerated, TState> | undefined {
+    if (this.handlerMisses.has(nodeName)) {
+      return undefined;
+    }
+
     const lowerFirst = (nodeName: string): string => `${nodeName[0].toLowerCase()}${nodeName.substring(1)}`;
 
-    return this[nodeName] || this[lowerFirst(nodeName)];
+    const handler = this[nodeName] || this[lowerFirst(nodeName)];
+
+    if (!handler) {
+      this.handlerMisses.add(nodeName);
+    }
+
+    return handler;
   }
 
   private attemptVisit(node: ParseNode, parents: ParseNode[], state: TState[], ast: TGenerated[]): InternalVisitResult<TGenerated, TState> {

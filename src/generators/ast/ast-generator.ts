@@ -1,5 +1,6 @@
 import {
   AnnotationNode,
+  MapType,
   ThriftAstRoot,
   ThriftConstant,
   ThriftEnum,
@@ -24,7 +25,9 @@ import {
 } from "../../grammar/nodes";
 import { Generator, ObjectOutput, OnBeforeVisitResult, VisitorInput, VisitorResult } from "../generator";
 
-type Input<TParent = ThriftAstRoot, TState = unknown, TNode = ParseNode> = VisitorInput<TParent, TState, TNode>;
+import { Rules } from "../../grammar/parser";
+
+type Input<TParent = ThriftAstRoot, TState = State, TNode = ParseNode> = VisitorInput<TParent, TState, TNode>;
 type Result<TState extends State = State> = VisitorResult<unknown, TState>;
 
 const StopResult: Result = {
@@ -73,17 +76,121 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected includeRule({ node, parentAst }: Input): Result {
-    let includeName = firstPayload<string>(node, "StringLiteral");
-
-    // Strip trailing ".thrift"
-    includeName = includeName.replace(/\.thrift$/, "");
-    parentAst.includes.push(includeName);
-
-    return StopResult;
+  protected async getOutputs(root?: ThriftAstRoot): Promise<ObjectOutput<ThriftAstRoot>[]> {
+    return [
+      {
+        type: "object",
+        value: root
+      }
+    ];
   }
 
-  protected annotationRule({ node, parentAst }: Input<AnnotationNode>): Result {
+  // --------------------------------------------------------------------------
+  // Types
+  // --------------------------------------------------------------------------
+  protected [Rules.Type]({ node, parentAst, state }: Input<ThriftType, State>): Result {
+    const identifier = identifierOf(node);
+
+    const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
+
+    if (identifier) {
+      parentAst[typeId] = "ref";
+      parentAst[type] = {
+        typeId: "ref",
+        name: identifier
+      };
+      return StopResult;
+    }
+
+    return PassResult;
+  }
+
+  protected [Rules.BaseType]({ node, parentAst, state }: Input<ThriftType, State>): Result {
+    const typeNode = firstExists(node, "I16", "I32", "I64", "Bool", "Byte", "Binary", "String", "Double");
+    const [typeId] = state?.typeTarget?.() || ["typeId"];
+
+    parentAst[typeId] = BaseTypeMap[typeNode];
+
+    return {
+      astNode: typeNode
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // Map Types
+  // --------------------------------------------------------------------------
+  protected [Rules.MapType]({ parentAst, state }: Input<ThriftType>): Result {
+    const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
+
+    parentAst[typeId] = "map";
+    parentAst[type] = {
+      typeId: "map",
+      keyTypeId: "unknown",
+      valueTypeId: "unknown"
+    };
+
+    return {
+      astNode: parentAst[type] // Enable type recursion
+    };
+  }
+
+  protected [Rules.MapKeyType](): Result {
+    return {
+      state: {
+        typeTarget: (): [string, string] => ["keyTypeId", "keyType"]
+      }
+    };
+  }
+
+  protected [Rules.MapValueType](): Result {
+    return {
+      state: {
+        typeTarget: (): [string, string] => ["valueTypeId", "valueType"]
+      }
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // List/Set Types
+  // --------------------------------------------------------------------------
+  protected [Rules.ListType]({ parentAst, state }: Input<ThriftType>): Result {
+    const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
+
+    parentAst[typeId] = "list";
+    parentAst[type] = {
+      typeId: "list",
+      elementTypeId: "unknown"
+    };
+
+    return {
+      astNode: parentAst[type], // Enable type recursion
+      state: {
+        typeTarget: (): [string, string] => ["elementTypeId", "elementType"]
+      }
+    };
+  }
+
+  protected [Rules.SetType]({ parentAst, state }: Input<ThriftType>): Result {
+    const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
+
+    parentAst[typeId] = "set";
+    parentAst[type] = {
+      typeId: "set",
+      elementTypeId: "unknown"
+    };
+
+    return {
+      astNode: parentAst[type], // Enable type recursion
+      state: {
+        typeTarget: (): [string, string] => ["elementTypeId", "elementType"]
+      }
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // Trivia Rules
+  // --------------------------------------------------------------------------
+  protected [Rules.Annotation]({ node, parentAst }: Input<AnnotationNode>): Result {
     if (!parentAst.annotations) {
       parentAst.annotations = {};
     }
@@ -96,7 +203,20 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     return StopResult;
   }
 
-  protected namespaceRule({ node, parentAst }: Input): Result {
+  // --------------------------------------------------------------------------
+  // Header Rules
+  // --------------------------------------------------------------------------
+  protected [Rules.Include]({ node, parentAst }: Input): Result {
+    let includeName = firstPayload<string>(node, "StringLiteral");
+
+    // Strip trailing ".thrift"
+    includeName = includeName.replace(/\.thrift$/, "");
+    parentAst.includes.push(includeName);
+
+    return StopResult;
+  }
+
+  protected [Rules.Namespace]({ node, parentAst }: Input): Result {
     // TODO: Wildcard support
     // TODO: Nested annotations
     const name = identifierOf(node, 0);
@@ -116,7 +236,24 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected enumRule({ node, parentAst, nodes }: Input): Result<EnumState> {
+  // --------------------------------------------------------------------------
+  // Definition Rules
+  // --------------------------------------------------------------------------
+  protected [Rules.TypeDef]({ node, parentAst }: Input): Result {
+    const typeDefNode: ThriftTypedef = {
+      node: "typedef",
+      name: identifierOf(node),
+      typeId: "unknown"
+    };
+
+    parentAst.typedefs.push(typeDefNode);
+
+    return {
+      astNode: typeDefNode
+    };
+  }
+
+  protected [Rules.Enum]({ node, parentAst, nodes }: Input): Result<EnumState> {
     const id = identifierOf(node);
     const container = findByName<WithComments>(nodes, "DefinitionRule");
     const comments = extractComments(container, "Doc");
@@ -140,7 +277,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected enumValueRule({ node, state, parentAst }: Input<ThriftEnum, EnumState, EnumValueNode>): Result<EnumState> {
+  protected [Rules.EnumValue]({ node, state, parentAst }: Input<ThriftEnum, EnumState, EnumValueNode>): Result<EnumState> {
     const id = identifierOf(node);
     let value: number = firstPayload(node, "HexConst", "IntegerConst");
 
@@ -167,7 +304,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected constRule({ node, parentAst }: Input): Result {
+  protected [Rules.Const]({ node, parentAst }: Input): Result {
     const constNode: ThriftConstant = {
       node: "const",
       name: identifierOf(node),
@@ -182,48 +319,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected typeDefRule({ node, parentAst }: Input): Result {
-    const typeDefNode: ThriftTypedef = {
-      node: "typedef",
-      name: identifierOf(node),
-      typeId: "unknown"
-    };
-
-    parentAst.typedefs.push(typeDefNode);
-
-    return {
-      astNode: typeDefNode
-    };
-  }
-
-  protected typeRule({ node, parentAst, state }: Input<ThriftType, State>): Result {
-    const identifier = identifierOf(node);
-
-    const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
-
-    if (identifier) {
-      parentAst[typeId] = "ref";
-      parentAst[type] = {
-        typeId: "ref",
-        name: identifier
-      };
-      return StopResult;
-    }
-
-    return PassResult;
-  }
-
-  protected baseTypeRule({ node, parentAst }: Input<ThriftType>): Result {
-    const typeNode = firstExists(node, "I16", "I32", "I64", "Bool", "Byte", "Binary", "String", "Double");
-
-    parentAst.typeId = BaseTypeMap[typeNode];
-
-    return {
-      astNode: typeNode
-    };
-  }
-
-  protected constValueRule({ node, parentAst }: Input<ThriftConstant>): Result {
+  protected [Rules.ConstValue]({ node, parentAst }: Input<ThriftConstant>): Result {
     // TODO: Boolean const
     const identifier = identifierOf(node);
 
@@ -243,7 +339,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected structRule({ node, parentAst }: Input): Result {
+  protected [Rules.Struct]({ node, parentAst }: Input): Result {
     const structNode: ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
@@ -259,7 +355,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected exceptionRule({ node, parentAst }: Input): Result {
+  protected [Rules.Exception]({ node, parentAst }: Input): Result {
     const structNode: ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
@@ -275,7 +371,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected unionRule({ node, parentAst }: Input): Result {
+  protected [Rules.Union]({ node, parentAst }: Input): Result {
     const structNode: ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
@@ -291,7 +387,28 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected fieldRule({ node, parentAst, state }: Input<ThriftStruct, State>): Result {
+  protected [Rules.Service]({ node, parentAst }: Input): Result {
+    const serviceNode: ThriftService = {
+      node: "service",
+      name: identifierOf(node, 0),
+      functions: []
+    };
+
+    if (firstExists(node, "Extends")) {
+      serviceNode.extends = identifierOf(node, 1);
+    }
+
+    parentAst.services.push(serviceNode);
+
+    return {
+      astNode: serviceNode
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // Fields and functions
+  // --------------------------------------------------------------------------
+  protected [Rules.Field]({ node, parentAst, state }: Input<ThriftStruct, State>): Result {
     const fieldNode: ThriftField = {
       node: "field",
       name: identifierOf(node),
@@ -314,14 +431,14 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected fieldIdRule({ node, parentAst }: Input<ThriftField>): Result {
+  protected [Rules.FieldId]({ node, parentAst }: Input<ThriftField>): Result {
     const id = firstPayload<number>(node, "IntegerConst");
     parentAst.key = id;
 
     return StopResult;
   }
 
-  protected fieldReqRule({ node, parentAst }: Input<ThriftField>): Result {
+  protected [Rules.FieldReq]({ node, parentAst }: Input<ThriftField>): Result {
     const optional = firstExists(node, "Optional");
     const required = firstExists(node, "Required");
 
@@ -330,25 +447,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     return StopResult;
   }
 
-  protected serviceRule({ node, parentAst }: Input): Result {
-    const serviceNode: ThriftService = {
-      node: "service",
-      name: identifierOf(node, 0),
-      functions: []
-    };
-
-    if (firstExists(node, "Extends")) {
-      serviceNode.extends = identifierOf(node, 1);
-    }
-
-    parentAst.services.push(serviceNode);
-
-    return {
-      astNode: serviceNode
-    };
-  }
-
-  protected functionRule({ node, parentAst }: Input<ThriftService>): Result<State> {
+  protected [Rules.Function]({ node, parentAst }: Input<ThriftService>): Result<State> {
     const functionNode: ThriftFunction = {
       node: "function",
       name: identifierOf(node),
@@ -369,20 +468,11 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected functionThrowsRule({ parentAst }: Input<ThriftFunction>): Result<State> {
+  protected [Rules.FunctionThrows]({ parentAst }: Input<ThriftFunction>): Result<State> {
     return {
       state: {
         fieldTarget: (): ThriftField[] => parentAst.exceptions
       }
     };
-  }
-
-  protected async getOutputs(root?: ThriftAstRoot): Promise<ObjectOutput<ThriftAstRoot>[]> {
-    return [
-      {
-        type: "object",
-        value: root
-      }
-    ];
   }
 }
