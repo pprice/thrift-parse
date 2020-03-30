@@ -3,6 +3,8 @@
     "Lexing",
     "oneway",
     "senum",
-    "slist"
-]
+    "slist",
+    "structs",
+    "typedefs"
+  ]
 }
