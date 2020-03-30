@@ -1,4 +1,4 @@
-import { getTestAssetContent, getThriftAssetsSync } from "./util";
+import { getTestAssetContent, getThriftAssetsSync } from "../../test-util/util";
 
 import { ThriftGrammar } from "../index";
 import { ThriftLexer } from "../lexer";

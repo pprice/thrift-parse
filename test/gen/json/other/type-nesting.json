@@ -1,0 +1,157 @@
+{
+  "name": "type-nesting",
+  "namespaces": {},
+  "includes": [],
+  "enums": [],
+  "typedefs": [
+    {
+      "name": "ListOfString",
+      "typeId": "list",
+      "type": {
+        "typeId": "list",
+        "elemTypeId": "string"
+      }
+    },
+    {
+      "name": "MapOfStringString",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "string"
+      }
+    },
+    {
+      "name": "MapOfStringListOfString",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "list",
+        "valueType": {
+          "typeId": "list",
+          "elemTypeId": "string"
+        }
+      }
+    },
+    {
+      "name": "MapOfStringListOfMapOfString",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "list",
+        "valueType": {
+          "typeId": "list",
+          "elemTypeId": "map",
+          "elemType": {
+            "typeId": "map",
+            "keyTypeId": "string",
+            "valueTypeId": "string"
+          }
+        }
+      }
+    },
+    {
+      "name": "MapOfStringListOfMapOfMapOfString",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "list",
+        "valueType": {
+          "typeId": "list",
+          "elemTypeId": "map",
+          "elemType": {
+            "typeId": "map",
+            "keyTypeId": "string",
+            "valueTypeId": "map",
+            "valueType": {
+              "typeId": "map",
+              "keyTypeId": "string",
+              "valueTypeId": "string"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "structs": [],
+  "constants": [
+    {
+      "name": "LIST_OF_STRING",
+      "typeId": "list",
+      "type": {
+        "typeId": "list",
+        "elemTypeId": "string"
+      },
+      "value": ["a", "b"]
+    },
+    {
+      "name": "MAP_OF_STRING",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "string"
+      },
+      "value": {
+        "a": "1",
+        "b": "2"
+      }
+    },
+    {
+      "name": "MAP_OF_LIST_OF_STRING",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "list",
+        "valueType": {
+          "typeId": "list",
+          "elemTypeId": "string"
+        }
+      },
+      "value": {
+        "a": [
+          {
+            "b": "2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MAP_OF_LIST_OF_MAP_OF_STRING",
+      "typeId": "map",
+      "type": {
+        "typeId": "map",
+        "keyTypeId": "string",
+        "valueTypeId": "list",
+        "valueType": {
+          "typeId": "list",
+          "elemTypeId": "map",
+          "elemType": {
+            "typeId": "map",
+            "keyTypeId": "string",
+            "valueTypeId": "map",
+            "valueType": {
+              "typeId": "map",
+              "keyTypeId": "string",
+              "valueTypeId": "string"
+            }
+          }
+        }
+      },
+      "value": {
+        "a": [
+          {
+            "b": {
+              "c": "2"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "services": []
+}
