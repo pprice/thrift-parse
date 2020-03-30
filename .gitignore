@@ -1,5 +1,14 @@
+# Packags 
 node_modules
-pnpm-debug.log
+
+# Outputs
 dist
 tmp
+gen-json
+gen-js
+
+# Debug logs
+pnpm-debug.log
+
+# Config
 .vscode/launch.json
