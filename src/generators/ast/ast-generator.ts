@@ -1,18 +1,5 @@
-import {
-  AnnotationNode,
-  MapType,
-  ThriftAstRoot,
-  ThriftConstant,
-  ThriftEnum,
-  ThriftEnumMember,
-  ThriftField,
-  ThriftFunction,
-  ThriftNamespace,
-  ThriftService,
-  ThriftStruct,
-  ThriftType,
-  ThriftTypedef
-} from "./types";
+import * as astTypes from "./types";
+
 import {
   EnumValueNode,
   ParseNode,
@@ -27,7 +14,7 @@ import { Generator, ObjectOutput, OnBeforeVisitResult, VisitorInput, VisitorResu
 
 import { Rules } from "../../grammar/parser";
 
-type Input<TParent = ThriftAstRoot, TState = State, TNode = ParseNode> = VisitorInput<TParent, TState, TNode>;
+type Input<TParent = astTypes.ThriftAstRoot, TState = State, TNode = ParseNode> = VisitorInput<TParent, TState, TNode>;
 type Result<TState extends State = State> = VisitorResult<unknown, TState>;
 
 const StopResult: Result = {
@@ -49,16 +36,16 @@ const BaseTypeMap = {
 
 type State = {
   typeTarget?: () => [string, string];
-  fieldTarget?: () => ThriftField[];
+  fieldTarget?: () => astTypes.ThriftField[];
 };
 
 type EnumState = State & {
   lastMemberIndex: number;
 };
 
-export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftAstRoot, State> {
-  protected async getInitialState(): Promise<OnBeforeVisitResult<ThriftAstRoot>> {
-    const root: ThriftAstRoot = {
+export class AstGenerator extends Generator<ObjectOutput<astTypes.ThriftAstRoot>, astTypes.ThriftAstRoot, State> {
+  protected async getInitialState(): Promise<OnBeforeVisitResult<astTypes.ThriftAstRoot>> {
+    const root: astTypes.ThriftAstRoot = {
       node: "document",
       name: "UNKNOWN",
       namespaces: [],
@@ -76,7 +63,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected async getOutputs(root?: ThriftAstRoot): Promise<ObjectOutput<ThriftAstRoot>[]> {
+  protected async getOutputs(root?: astTypes.ThriftAstRoot): Promise<ObjectOutput<astTypes.ThriftAstRoot>[]> {
     return [
       {
         type: "object",
@@ -88,7 +75,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // --------------------------------------------------------------------------
   // Types
   // --------------------------------------------------------------------------
-  protected [Rules.Type]({ node, parentAst, state }: Input<ThriftType, State>): Result {
+  protected [Rules.Type]({ node, parentAst, state }: Input<astTypes.ThriftType>): Result {
     const identifier = identifierOf(node);
 
     const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
@@ -105,7 +92,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     return PassResult;
   }
 
-  protected [Rules.BaseType]({ node, parentAst, state }: Input<ThriftType, State>): Result {
+  protected [Rules.BaseType]({ node, parentAst, state }: Input<astTypes.ThriftType>): Result {
     const typeNode = firstExists(node, "I16", "I32", "I64", "Bool", "Byte", "Binary", "String", "Double");
     const [typeId] = state?.typeTarget?.() || ["typeId"];
 
@@ -119,7 +106,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // --------------------------------------------------------------------------
   // Map Types
   // --------------------------------------------------------------------------
-  protected [Rules.MapType]({ parentAst, state }: Input<ThriftType>): Result {
+  protected [Rules.MapType]({ parentAst, state }: Input<astTypes.ThriftType>): Result {
     const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
 
     parentAst[typeId] = "map";
@@ -153,7 +140,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // --------------------------------------------------------------------------
   // List/Set Types
   // --------------------------------------------------------------------------
-  protected [Rules.ListType]({ parentAst, state }: Input<ThriftType>): Result {
+  protected [Rules.ListType]({ parentAst, state }: Input<astTypes.ThriftType>): Result {
     const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
 
     parentAst[typeId] = "list";
@@ -170,7 +157,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected [Rules.SetType]({ parentAst, state }: Input<ThriftType>): Result {
+  protected [Rules.SetType]({ parentAst, state }: Input<astTypes.ThriftType>): Result {
     const [typeId, type] = state?.typeTarget?.() || ["typeId", "type"];
 
     parentAst[typeId] = "set";
@@ -190,7 +177,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // --------------------------------------------------------------------------
   // Trivia Rules
   // --------------------------------------------------------------------------
-  protected [Rules.Annotation]({ node, parentAst }: Input<AnnotationNode>): Result {
+  protected [Rules.Annotation]({ node, parentAst }: Input<astTypes.AnnotationNode>): Result {
     if (!parentAst.annotations) {
       parentAst.annotations = {};
     }
@@ -222,7 +209,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     const name = identifierOf(node, 0);
     const value = identifierOf(node, 1);
 
-    const namespaceNode: ThriftNamespace = {
+    const namespaceNode: astTypes.ThriftNamespace = {
       node: "namespace",
       name,
       value
@@ -240,7 +227,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // Definition Rules
   // --------------------------------------------------------------------------
   protected [Rules.TypeDef]({ node, parentAst }: Input): Result {
-    const typeDefNode: ThriftTypedef = {
+    const typeDefNode: astTypes.ThriftTypedef = {
       node: "typedef",
       name: identifierOf(node),
       typeId: "unknown"
@@ -260,7 +247,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
 
     console.dir(comments);
 
-    const enumNode: ThriftEnum = {
+    const enumNode: astTypes.ThriftEnum = {
       node: "enum",
       name: id,
       doc: comments.length > 0 ? comments[0].value : undefined,
@@ -277,7 +264,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected [Rules.EnumValue]({ node, state, parentAst }: Input<ThriftEnum, EnumState, EnumValueNode>): Result<EnumState> {
+  protected [Rules.EnumValue]({ node, state, parentAst }: Input<astTypes.ThriftEnum, EnumState, EnumValueNode>): Result<EnumState> {
     const id = identifierOf(node);
     let value: number = firstPayload(node, "HexConst", "IntegerConst");
 
@@ -288,7 +275,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
       value = ++state.lastMemberIndex;
     }
 
-    const member: ThriftEnumMember = {
+    const member: astTypes.ThriftEnumMember = {
       node: "member",
       name: id,
       value: value
@@ -305,7 +292,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   }
 
   protected [Rules.Const]({ node, parentAst }: Input): Result {
-    const constNode: ThriftConstant = {
+    const constNode: astTypes.ThriftConstant = {
       node: "const",
       name: identifierOf(node),
       value: null,
@@ -319,7 +306,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected [Rules.ConstValue]({ node, parentAst }: Input<ThriftConstant>): Result {
+  protected [Rules.ConstValue]({ node, parentAst }: Input<astTypes.ThriftConstant>): Result {
     // TODO: Boolean const
     const identifier = identifierOf(node);
 
@@ -340,7 +327,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   }
 
   protected [Rules.Struct]({ node, parentAst }: Input): Result {
-    const structNode: ThriftStruct = {
+    const structNode: astTypes.ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
       isException: false,
@@ -356,7 +343,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   }
 
   protected [Rules.Exception]({ node, parentAst }: Input): Result {
-    const structNode: ThriftStruct = {
+    const structNode: astTypes.ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
       isException: true,
@@ -372,7 +359,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   }
 
   protected [Rules.Union]({ node, parentAst }: Input): Result {
-    const structNode: ThriftStruct = {
+    const structNode: astTypes.ThriftStruct = {
       node: "struct",
       name: identifierOf(node),
       isException: false,
@@ -388,7 +375,7 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   }
 
   protected [Rules.Service]({ node, parentAst }: Input): Result {
-    const serviceNode: ThriftService = {
+    const serviceNode: astTypes.ThriftService = {
       node: "service",
       name: identifierOf(node, 0),
       functions: []
@@ -408,8 +395,8 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
   // --------------------------------------------------------------------------
   // Fields and functions
   // --------------------------------------------------------------------------
-  protected [Rules.Field]({ node, parentAst, state }: Input<ThriftStruct, State>): Result {
-    const fieldNode: ThriftField = {
+  protected [Rules.Field]({ node, parentAst, state }: Input<astTypes.ThriftStruct, State>): Result {
+    const fieldNode: astTypes.ThriftField = {
       node: "field",
       name: identifierOf(node),
       required: "req_out",
@@ -431,14 +418,14 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     };
   }
 
-  protected [Rules.FieldId]({ node, parentAst }: Input<ThriftField>): Result {
+  protected [Rules.FieldId]({ node, parentAst }: Input<astTypes.ThriftField>): Result {
     const id = firstPayload<number>(node, "IntegerConst");
     parentAst.key = id;
 
     return StopResult;
   }
 
-  protected [Rules.FieldReq]({ node, parentAst }: Input<ThriftField>): Result {
+  protected [Rules.FieldReq]({ node, parentAst }: Input<astTypes.ThriftField>): Result {
     const optional = firstExists(node, "Optional");
     const required = firstExists(node, "Required");
 
@@ -447,8 +434,8 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
     return StopResult;
   }
 
-  protected [Rules.Function]({ node, parentAst }: Input<ThriftService>): Result<State> {
-    const functionNode: ThriftFunction = {
+  protected [Rules.Function]({ node, parentAst }: Input<astTypes.ThriftService>): Result<State> {
+    const functionNode: astTypes.ThriftFunction = {
       node: "function",
       name: identifierOf(node),
       arguments: [],
@@ -463,15 +450,15 @@ export class AstGenerator extends Generator<ObjectOutput<ThriftAstRoot>, ThriftA
       astNode: functionNode,
       state: {
         typeTarget: (): [string, string] => ["returnTypeId", "returnType"],
-        fieldTarget: (): ThriftField[] => functionNode.arguments
+        fieldTarget: (): astTypes.ThriftField[] => functionNode.arguments
       }
     };
   }
 
-  protected [Rules.FunctionThrows]({ parentAst }: Input<ThriftFunction>): Result<State> {
+  protected [Rules.FunctionThrows]({ parentAst }: Input<astTypes.ThriftFunction>): Result<State> {
     return {
       state: {
-        fieldTarget: (): ThriftField[] => parentAst.exceptions
+        fieldTarget: (): astTypes.ThriftField[] => parentAst.exceptions
       }
     };
   }
