@@ -24,47 +24,29 @@ export type BaseType = {
   typeId: "i8" | "i16" | "i32" | "i64" | "string" | "binary" | "bool" | "double";
 };
 
-export type StructType = {
-  typeId: "struct";
+export type StructLikeType<T> = {
+  typeId: T;
   type: {
-    typeId: "struct";
+    typeId: T;
     class: string;
   };
 };
 
-export type ExceptionType = {
-  typeId: "exception";
+export type StructType = StructLikeType<"struct">;
+export type ExceptionType = StructLikeType<"exception">;
+export type UnionType = StructLikeType<"union">;
+
+type ListLikeType<T> = {
+  typeId: T;
   type: {
-    typeId: "exception";
-    class: string;
+    typeId: T;
+    elemTypeId: TypeKeys;
+    elemType?: ThriftType;
   };
 };
 
-export type UnionType = {
-  typeId: "union";
-  type: {
-    typeId: "union";
-    class: string;
-  };
-};
-
-export type ListType = {
-  typeId: "list";
-  type: {
-    typeId: "list";
-    elementTypeId: TypeKeys;
-    elementType?: ThriftType;
-  };
-};
-
-export type SetType = {
-  typeId: "set";
-  type: {
-    typeId: "set";
-    elementTypeId: TypeKeys;
-    elementType?: ThriftType;
-  };
-};
+export type ListType = ListLikeType<"list">;
+export type SetType = ListLikeType<"set">;
 
 export type MapType = {
   typeId: "map";
