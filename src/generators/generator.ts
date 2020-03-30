@@ -96,7 +96,8 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
           return [];
         }
 
-        return parseNode.map(i => ({ node: i, parents: [this.root], state: rootVisit.state, ast: rootVisit.ast }));
+        // Note: we need to reverse top level rules the same as we do for child nodes to ensure correct ordering
+        return parseNode.map(i => ({ node: i, parents: [this.root], state: rootVisit.state, ast: rootVisit.ast })).reverse();
       };
 
       // Ensure order of top level items, as the root rule is ordered by node name
@@ -130,11 +131,14 @@ export abstract class Generator<TOutput extends GeneratorOutput = GeneratorOutpu
           const childNode: unknown[] = node.children[key];
 
           // NOTE: Children need to be reverse so when they enter the stack they are enumerated in the expected order
-          const next: TreeStackNode[] = childNode
-            .map(i => ({ node: i, parents: [node, ...parents], state: [...v.state], ast: [...v.ast] }))
-            .reverse();
+          const next: TreeStackNode[] = childNode.map(i => ({
+            node: i,
+            parents: [node, ...parents],
+            state: [...v.state],
+            ast: [...v.ast]
+          }));
 
-          treeStack.push(...next);
+          treeStack.push(...next.reverse());
         }
       }
     }
