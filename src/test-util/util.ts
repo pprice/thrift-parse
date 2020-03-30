@@ -51,7 +51,7 @@ export function getMatchingSnapshotAssets(type: string, extension: string = type
   const trimmedThrift = new Set(trimTestPath(thriftSources));
   const trimmedPotentials = trimTestPath(potentialMatches);
 
-  const potentialToThrift = (path: string) => {
+  const potentialToThrift = (path: string): string => {
     return path.replace(new RegExp(`^${potentialPrefix}`), thriftPrefix).replace(new RegExp(`\\.${extension}$`), ".thrift");
   };
 
