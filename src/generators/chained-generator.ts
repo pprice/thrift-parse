@@ -9,7 +9,7 @@ export class ChainedGenerator<TOutput extends GeneratorOutput = GeneratorOutput>
     let currentInput: unknown = node;
     let currentOutput: GeneratorResult;
 
-    const finalOutput: GeneratorResult<TOutput> = {
+    let output: GeneratorResult<TOutput> = {
       errors: [],
       warnings: [],
       output: [],
@@ -25,21 +25,23 @@ export class ChainedGenerator<TOutput extends GeneratorOutput = GeneratorOutput>
       currentInput = currentOutput.output[0].value;
 
       // Merge results
-      finalOutput.errors = [...finalOutput.errors, ...currentOutput.errors];
-      finalOutput.warnings = [...finalOutput.warnings, ...currentOutput.warnings];
-      finalOutput.performance = {
-        ...finalOutput.performance,
-        ...Object.entries(currentOutput.performance || {}).reduce((acc, [key, e]) => {
-          acc[`${name}.${key}`] = e;
-          return acc;
-        }, {})
+      output = {
+        errors: [...output.errors, ...currentOutput.errors],
+        warnings: [...output.warnings, ...currentOutput.warnings],
+        performance: {
+          ...output.performance,
+          ...Object.entries(currentOutput.performance || {}).reduce((acc, [key, e]) => {
+            acc[`${name}.${key}`] = e;
+            return acc;
+          }, {})
+        }
       };
 
       idx++;
     }
 
-    finalOutput.output = currentOutput.output as TOutput[];
-    return finalOutput;
+    output.output = currentOutput.output as TOutput[];
+    return output;
   }
 }
 
