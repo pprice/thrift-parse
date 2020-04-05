@@ -35,8 +35,8 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
       const detailedParseErrors = buildParseErrors(content, parseResult.errors.parse);
       outputParseErrors(match, detailedParseErrors, parseResult, log);
     } else {
-      const generator = generatorFactory(parseResult.cst as ParseNode, null);
-      generatorResult = await generator.process();
+      const generator = generatorFactory(null);
+      generatorResult = await generator.process(parseResult.cst as ParseNode);
 
       if (generatorResult.errors?.length == 0) {
         let generatedWithContent = 0;
@@ -45,7 +45,7 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
           log.info(chalk`{cyan ${generated.fileHint || generated.type}}`);
           log.separator();
           if (generated.type === "string") {
-            log.info(chalk`{whiteBright ${generated.content}}`);
+            log.info(chalk`{whiteBright ${generated.value}}`);
           } else if (generated.type === "object") {
             log.info(colorize(JSON.stringify(generated.value, null, 2)));
           }

@@ -1,6 +1,5 @@
 import { getMatchingSnapshotAssets, getTestAssetContent } from "../../test-util/util";
 
-import { ParseNode } from "../cst-generator";
 import { ThriftGrammar } from "../../grammar";
 import { getGeneratorFactory } from "..";
 
@@ -12,8 +11,8 @@ describe("JSON Generation", () => {
     const grammar = new ThriftGrammar();
     const parsed = grammar.parse(await getTestAssetContent(thriftInput));
 
-    const generator = generatorFactory(parsed.cst as ParseNode, null);
-    const result = await generator.process();
+    const generator = generatorFactory(null);
+    const result = await generator.process(parsed.cst);
 
     expect(result.errors).toHaveLength(0);
     expect(result.output[0].type).toEqual("object");

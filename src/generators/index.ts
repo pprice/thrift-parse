@@ -1,19 +1,19 @@
-import { CstGenerator } from "./cst-generator";
-import { AstGenerator } from "./ast/ast-generator";
-import { ParseNode } from "../grammar/nodes";
 import { TsEnumGenerator } from "./recast/ts-enum";
-import { GeneratorConfig } from "./types";
+import { GeneratorConfig, Generator } from "./types";
+import { JsonObjectGenerator, JsonStringGenerator } from "./json/json-generator";
 
 export * from "./types";
-export { CstGenerator, AstGenerator };
+export { Generator };
 
-type GeneratorFactory<T extends GeneratorConfig> = (root: ParseNode, config: T) => CstGenerator;
+type GeneratorFactory<T extends GeneratorConfig> = (config: T) => Generator;
 
 export function getGeneratorFactory<T extends GeneratorConfig = GeneratorConfig>(name: string): GeneratorFactory<T> | null {
   if (name === "ts-enum") {
-    return (root: ParseNode): CstGenerator => new TsEnumGenerator(root);
+    return (): Generator => new TsEnumGenerator();
+  } else if (name === "json-o") {
+    return (): Generator => new JsonObjectGenerator();
   } else if (name === "json") {
-    return (root: ParseNode): CstGenerator => new AstGenerator(root);
+    return (): Generator => new JsonStringGenerator();
   }
 
   return null;

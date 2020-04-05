@@ -128,7 +128,7 @@ export type ThriftService = DefaultNode & {
   functions: ThriftFunction[];
 };
 
-export type ThriftAstRoot = DocumentNode & {
+export type ThriftRoot = DocumentNode & {
   node: "document";
   name: string;
   namespaces: ThriftNamespace[];
@@ -139,3 +139,17 @@ export type ThriftAstRoot = DocumentNode & {
   constants: ThriftConstant[];
   services: ThriftService[];
 };
+
+export type ThriftNode =
+  | ThriftRoot
+  | ThriftService
+  | ThriftFunction
+  | ThriftConstant
+  | ThriftConstant
+  | ThriftEnum
+  | ThriftEnumMember
+  | ThriftNamespace
+  | ThriftTypedef
+  | ThriftStruct
+  | ThriftField
+  | ThriftFunction;

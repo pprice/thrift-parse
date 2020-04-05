@@ -18,10 +18,6 @@ export type RecastVisitorInput<
 export abstract class RecastGenerator extends CstGenerator<StringOutput, RecastAstNode> {
   protected abstract readonly type: string;
 
-  constructor(root: ParseNode) {
-    super(root);
-  }
-
   protected async getInitialState(): Promise<OnBeforeVisitResult<RecastAstNode>> {
     const generated = b.program([]);
     generated.body = [];
@@ -48,12 +44,12 @@ export abstract class RecastGenerator extends CstGenerator<StringOutput, RecastA
       {
         type: "string",
         fileExtensionHint: this.type,
-        content: output.code
+        value: output.code
       },
       {
         type: "string",
         fileExtensionHint: this.type,
-        content: output.map
+        value: output.map
       }
     ];
   }

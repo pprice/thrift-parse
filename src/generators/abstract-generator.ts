@@ -1,5 +1,5 @@
 import { TimingInfo, fromMilliseconds, time } from "../perf-util";
-import { GeneratorOutput, OnBeforeVisitResult, VisitorFunc, VisitorResult, VisitorInput, GeneratorResult } from "./types";
+import { GeneratorOutput, OnBeforeVisitResult, VisitorFunc, VisitorResult, VisitorInput, GeneratorResult, Generator } from "./types";
 
 type InternalVisitResult<TGenerated, TState = unknown> = { result: VisitorResult<TGenerated, TState>; state: TState[]; ast: TGenerated[] };
 
@@ -8,16 +8,14 @@ export abstract class AbstractGenerator<
   TOutput extends GeneratorOutput = GeneratorOutput,
   TGenerated = unknown,
   TState = unknown
-> {
+> implements Generator {
   private visitTimer: TimingInfo | null = null;
   private handlerMisses: Set<string | symbol> = new Set();
   protected visits = 0;
 
-  constructor(protected root: TNode) {}
-
   protected abstract getOutputs(rootGenerated?: TGenerated, rootState?: TState): PromiseLike<TOutput[]>;
 
-  protected abstract getInitialState(): PromiseLike<OnBeforeVisitResult<TGenerated, TState> | undefined>;
+  protected abstract getInitialState(root?: TNode): PromiseLike<OnBeforeVisitResult<TGenerated, TState> | undefined>;
 
   protected abstract getNodeName(node: TNode): string | symbol;
 
@@ -76,8 +74,8 @@ export abstract class AbstractGenerator<
     };
   }
 
-  async process(): Promise<GeneratorResult<TOutput>> {
-    const { state: rootState, generated: rootGenerated } = await this.getInitialState();
+  async process(root: TNode): Promise<GeneratorResult<TOutput>> {
+    const { state: rootState, generated: rootGenerated } = await this.getInitialState(root);
     const errors: Error[] = [];
     const warnings: Error[] = [];
     const walkTimeHandle = time();
@@ -106,7 +104,7 @@ export abstract class AbstractGenerator<
     // Ensure order of top level items, as the root rule is ordered by node name
     const treeStack: TreeStackNode[] = [
       {
-        node: this.root,
+        node: root,
         parents: [],
         state: [rootState].filter(Boolean),
         ast: [rootGenerated].filter(Boolean)

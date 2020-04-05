@@ -6,7 +6,7 @@ export type StringOutput = {
   fileHint?: string;
   fileExtensionHint?: string;
   type: "string";
-  content: string;
+  value: string;
 };
 
 export type ObjectOutput<TObject extends {} = {}> = {
@@ -48,4 +48,9 @@ export type VisitorFunc<TGenerated, TState = unknown> = (
 export type OnBeforeVisitResult<TGenerated, TState = unknown> = {
   state: TState;
   generated: TGenerated;
+};
+
+export type Generator = {
+  name?: string;
+  process(node: unknown): Promise<GeneratorResult>;
 };
