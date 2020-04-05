@@ -1,9 +1,9 @@
 import { GrammarParseResult, ParseError } from "../grammar";
 
-import { GeneratorResult } from "../generators/generator";
 import { IToken } from "chevrotain";
 import { TimingInfo } from "../perf-util";
 import chalk from "chalk";
+import { GeneratorResult } from "../generators";
 
 export type Logger = {
   info: (message?: unknown) => void;

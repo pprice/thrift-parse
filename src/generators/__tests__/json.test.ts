@@ -1,6 +1,6 @@
 import { getMatchingSnapshotAssets, getTestAssetContent } from "../../test-util/util";
 
-import { ParseNode } from "../generator";
+import { ParseNode } from "../cst-generator";
 import { ThriftGrammar } from "../../grammar";
 import { getGeneratorFactory } from "..";
 

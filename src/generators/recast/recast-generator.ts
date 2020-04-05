@@ -1,8 +1,9 @@
 import * as recast from "recast";
 
-import { Generator, OnBeforeVisitResult, ParseNode, StringOutput, VisitorInput, VisitorResult } from "../generator";
+import { CstGenerator, ParseNode } from "../cst-generator";
 
 import { b } from "./builders";
+import { VisitorResult, StringOutput, OnBeforeVisitResult, VisitorInput } from "..";
 
 export type RecastAstNode = recast.types.namedTypes.Node;
 type ProgramAstNode = recast.types.namedTypes.Program;
@@ -14,7 +15,7 @@ export type RecastVisitorInput<
   TNode extends ParseNode = ParseNode
 > = VisitorInput<TRecastNode, TState, TNode>;
 
-export abstract class RecastGenerator extends Generator<StringOutput, RecastAstNode> {
+export abstract class RecastGenerator extends CstGenerator<StringOutput, RecastAstNode> {
   protected abstract readonly type: string;
 
   constructor(root: ParseNode) {

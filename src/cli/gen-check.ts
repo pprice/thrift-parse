@@ -2,11 +2,10 @@ import { ThriftGrammar, buildParseErrors } from "../grammar";
 import { outputGeneratorStatus, outputGrammarStatus, outputParseErrors } from "./log";
 
 import { DefaultCliOptions } from ".";
-import { GeneratorResult } from "../generators/generator";
 import { ParseNode } from "../grammar/nodes";
 import chalk from "chalk";
 import colorize from "json-colorizer";
-import { getGeneratorFactory } from "../generators";
+import { getGeneratorFactory, GeneratorResult } from "../generators";
 import { matchAndProcessEach } from "./util";
 
 type GenCheckOptions = {

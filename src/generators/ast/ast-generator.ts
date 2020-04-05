@@ -10,11 +10,12 @@ import {
   firstPayload,
   identifierOf
 } from "../../grammar/nodes";
-import { Generator, ObjectOutput, OnBeforeVisitResult, VisitorInput, VisitorResult } from "../generator";
+import { CstGenerator } from "../cst-generator";
 
 import { Rules } from "../../grammar/parser";
+import { VisitorResult, VisitorInput, ObjectOutput, OnBeforeVisitResult } from "../types";
 
-type Input<TParent = astTypes.ThriftAstRoot, TState = State, TNode = ParseNode> = VisitorInput<TParent, TState, TNode>;
+type Input<TParent = astTypes.ThriftAstRoot, TState = State, TNode extends object = ParseNode> = VisitorInput<TParent, TState, TNode>;
 type Result<TState extends State = State> = VisitorResult<unknown, TState>;
 
 const StopResult: Result = {
@@ -43,7 +44,7 @@ type EnumState = State & {
   lastMemberIndex: number;
 };
 
-export class AstGenerator extends Generator<ObjectOutput<astTypes.ThriftAstRoot>, astTypes.ThriftAstRoot, State> {
+export class AstGenerator extends CstGenerator<ObjectOutput<astTypes.ThriftAstRoot>, astTypes.ThriftAstRoot, State> {
   protected async getInitialState(): Promise<OnBeforeVisitResult<astTypes.ThriftAstRoot>> {
     const root: astTypes.ThriftAstRoot = {
       node: "document",
