@@ -25,6 +25,11 @@ function stageMessage(stage: string, errors: unknown[], timing: TimingInfo, pad 
   return chalk`{red ${stage}} ⟶  ❌  {redBright [ ${errors.length} ${errors.length === 1 ? "error" : "errors"} ]}   ${formattedTimeString}`;
 }
 
+export function outputGrammarStatus(result: GrammarParseResult, log: Logger, pad = 16): void {
+  log.info(`${stageMessage("Lex", result.errors.lex, result.performance.lex, pad)}`);
+  log.info(`${stageMessage("Parse", result.errors.parse, result.performance.parse, pad)}`);
+}
+
 export function outputGeneratorStatus(parseResult: GrammarParseResult, result: GeneratorResult, log: Logger): void {
   const allErrors = [];
 
@@ -47,11 +52,6 @@ export function outputGeneratorStatus(parseResult: GrammarParseResult, result: G
 
   log.separator();
   log.info(`${stageMessage("All", allErrors, total, longestKey)}`);
-}
-
-export function outputGrammarStatus(result: GrammarParseResult, log: Logger, pad = 16): void {
-  log.info(`${stageMessage("Lex", result.errors.lex, result.performance.lex, pad)}`);
-  log.info(`${stageMessage("Parse", result.errors.parse, result.performance.parse, pad)}`);
 }
 
 export function outputParseError(file: string, error: ParseError, result: GrammarParseResult, log: Logger): void {
