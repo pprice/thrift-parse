@@ -103,12 +103,16 @@ type TLabels = {
   MapKeyType: "MapKeyTypeLabel";
   MapValueType: "MapValueTypeLabel";
   PostComments: "PostCommentsLabel";
+  MapValue: "MapValueLabel";
+  MapKey: "MapKeyLabel";
 };
 
 const Labels: TLabels = {
   MapKeyType: "MapKeyTypeLabel",
   MapValueType: "MapValueTypeLabel",
-  PostComments: "PostCommentsLabel"
+  PostComments: "PostCommentsLabel",
+  MapValue: "MapValueLabel",
+  MapKey: "MapKeyLabel"
 };
 
 export type LabelName = TLabels[keyof TLabels];
@@ -419,7 +423,7 @@ export class ThriftCstParser extends CstParser {
     this.CONSUME(Tokens.LBracket);
     this.MANY_SEP({
       SEP: Tokens.Comma,
-      DEF: () => this.SUBRULE(this.constValue, { LABEL: "value" })
+      DEF: () => this.SUBRULE(this.constValue)
     });
     this.CONSUME(Tokens.RBracket);
   });
@@ -427,7 +431,7 @@ export class ThriftCstParser extends CstParser {
   private mapConst = this.RULE(Rules.MapConst, () => {
     this.CONSUME(Tokens.LCurly);
 
-    this.MANY(() => this.SUBRULE(this.mapValue, { LABEL: "values" }));
+    this.MANY(() => this.SUBRULE(this.mapValue));
 
     // There could be a trailing list separator
     this.OPTION(() => this.CONSUME2(Tokens.ListSeparator));
@@ -440,9 +444,9 @@ export class ThriftCstParser extends CstParser {
 
     this.OPTION1(() => {
       // Map rule is also used for const struct definitions, will need to split this out
-      this.SUBRULE2(this.constValue, { LABEL: "key" });
+      this.SUBRULE2(this.constValue, { LABEL: Labels.MapKey });
       this.CONSUME(Tokens.Colon);
-      this.SUBRULE3(this.constValue, { LABEL: "value" });
+      this.SUBRULE3(this.constValue, { LABEL: Labels.MapValue });
       this.OPTION2(() => this.CONSUME(Tokens.ListSeparator));
     });
   });

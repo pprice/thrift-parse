@@ -62,3 +62,12 @@ export function time(basis?: TimingInfo): TimingBlock {
     return fromMilliseconds(milliseconds);
   };
 }
+
+export function none(): TimingInfo {
+  return fromMilliseconds(0);
+}
+
+export function sumTime(...times: TimingInfo[]): TimingInfo {
+  const totalMs = times.reduce((acc, i) => acc + i.milliseconds, 0.0);
+  return fromMilliseconds(totalMs);
+}

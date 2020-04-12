@@ -1,7 +1,7 @@
 import { GrammarParseResult, ParseError } from "../grammar";
 
 import { IToken } from "chevrotain";
-import { TimingInfo } from "../perf-util";
+import { TimingInfo, sumTime } from "../perf-util";
 import chalk from "chalk";
 import { GeneratorResult } from "../generators";
 
@@ -14,10 +14,8 @@ export type Logger = {
   separator: () => void;
 };
 
-const STATUS_NAME_MAX_WIDTH = 16;
-
-function stageMessage(stage: string, errors: unknown[], timing: TimingInfo): string {
-  stage = stage.padEnd(STATUS_NAME_MAX_WIDTH);
+function stageMessage(stage: string, errors: unknown[], timing: TimingInfo, pad = 16): string {
+  stage = stage.padEnd(pad);
   const formattedTime = timing.format();
   const formattedTimeString = chalk`{gray (${formattedTime.value.toFixed(2)} ${formattedTime.unit})}`;
   if (errors.length === 0) {
@@ -27,15 +25,33 @@ function stageMessage(stage: string, errors: unknown[], timing: TimingInfo): str
   return chalk`{red ${stage}} ⟶  ❌  {redBright [ ${errors.length} ${errors.length === 1 ? "error" : "errors"} ]}   ${formattedTimeString}`;
 }
 
-export function outputGeneratorStatus(result: GeneratorResult, log: Logger): void {
+export function outputGeneratorStatus(parseResult: GrammarParseResult, result: GeneratorResult, log: Logger): void {
+  const allErrors = [];
+
+  const total = sumTime(...[...Object.values(result.performance), ...Object.values(parseResult.performance)]);
+  const longestKey = Object.keys({ ...result.performance, ...parseResult.performance }).reduce((acc, i) => {
+    if (acc < i.length) {
+      return i.length;
+    }
+
+    return acc;
+  }, 0);
+
+  outputGrammarStatus(parseResult, log, longestKey);
+
   for (const [key, timing] of Object.entries(result.performance)) {
-    log.info(`${stageMessage(key, result.errors, timing)}`);
+    log.info(`${stageMessage(key, result.errors, timing, longestKey)}`);
+
+    allErrors.push(...result.errors);
   }
+
+  log.separator();
+  log.info(`${stageMessage("All", allErrors, total, longestKey)}`);
 }
 
-export function outputGrammarStatus(result: GrammarParseResult, log: Logger): void {
-  log.info(`${stageMessage("Lex", result.errors.lex, result.performance.lex)}`);
-  log.info(`${stageMessage("Parse", result.errors.parse, result.performance.parse)}`);
+export function outputGrammarStatus(result: GrammarParseResult, log: Logger, pad = 16): void {
+  log.info(`${stageMessage("Lex", result.errors.lex, result.performance.lex, pad)}`);
+  log.info(`${stageMessage("Parse", result.errors.parse, result.performance.parse, pad)}`);
 }
 
 export function outputParseError(file: string, error: ParseError, result: GrammarParseResult, log: Logger): void {

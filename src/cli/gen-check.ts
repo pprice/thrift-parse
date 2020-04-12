@@ -1,5 +1,5 @@
 import { ThriftGrammar, buildParseErrors } from "../grammar";
-import { outputGeneratorStatus, outputGrammarStatus, outputParseErrors } from "./log";
+import { outputGeneratorStatus, outputParseErrors } from "./log";
 
 import { DefaultCliOptions } from ".";
 import { ParseNode } from "../grammar/nodes";
@@ -58,8 +58,7 @@ export async function genCheck(options: GenCheckOptions): Promise<void> {
     }
 
     log.separator();
-    outputGrammarStatus(parseResult, log);
-    outputGeneratorStatus(generatorResult, log);
+    outputGeneratorStatus(parseResult, generatorResult, log);
     log.separator();
   });
 }

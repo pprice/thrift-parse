@@ -246,8 +246,6 @@ export class CstToAstGenerator extends CstGenerator<ObjectOutput<astTypes.Thrift
     const container = findByName<WithComments>(nodes, "DefinitionRule");
     const comments = extractComments(container, "Doc");
 
-    console.dir(comments);
-
     const enumNode: astTypes.ThriftEnum = {
       node: "enum",
       name: id,
@@ -307,23 +305,118 @@ export class CstToAstGenerator extends CstGenerator<ObjectOutput<astTypes.Thrift
     };
   }
 
-  protected [Rules.ConstValue]({ node, parentAst }: Input<astTypes.ThriftConstant>): Result {
+  protected [Rules.ConstValue]({
+    node,
+    parentAst
+  }: Input<astTypes.ThriftConstant | astTypes.ThriftMapValueElement | astTypes.ThriftListValue>): Result {
     // TODO: Boolean const
     const identifier = identifierOf(node);
 
+    let valueNode: astTypes.ThriftValue | undefined = undefined;
+
     if (identifier) {
-      parentAst.value = identifier;
-      return {
-        stop: true
+      valueNode = {
+        node: "refValue",
+        identifier
       };
+    } else {
+      // Attempt to fetch a basic literal value
+      const value = firstPayload<number | boolean | string | undefined>(
+        node,
+        "StringLiteral",
+        "HexConst",
+        "IntegerConst",
+        "DoubleConst",
+        "BooleanConst"
+      );
+
+      switch (typeof value) {
+        case "boolean":
+          valueNode = {
+            node: "booleanValue",
+            value
+          };
+          break;
+        case "number":
+          valueNode = {
+            node: "numberValue",
+            value
+          };
+          break;
+        case "string":
+          valueNode = {
+            node: "stringValue",
+            value
+          };
+          break;
+        default:
+          // If we failed to fetch a basic literal value, set a stub value which is used as a placeholder
+          // for complex constant expansion (e.g. maps and lists), we can't peek forward
+          valueNode = {
+            node: "stubValue"
+          };
+          break;
+      }
     }
 
-    const basicValue = firstPayload(node, "StringLiteral", "HexConst", "IntegerConst", "DoubleConst", "BooleanConst");
-    parentAst.value = basicValue || null;
+    const stop = valueNode.node !== "stubValue";
+
+    if (parentAst.node === "const") {
+      parentAst.value = valueNode;
+    } else if (parentAst.node === "listValue") {
+      parentAst.value.push(valueNode);
+    } else if (parentAst.node === "mapValueElement") {
+      if (parentAst.key.node === "stubValue") {
+        parentAst.key = valueNode;
+      } else if (parentAst.value.node === "stubValue") {
+        parentAst.value = valueNode;
+      } else {
+        throw new Error("panic");
+      }
+    }
 
     return {
-      astNode: parentAst,
-      stop: basicValue != null
+      astNode: valueNode,
+      stop
+    };
+  }
+
+  protected [Rules.ListConst]({ parentAst }: Input<astTypes.ThriftListValue>): Result {
+    parentAst.node = "listValue";
+    parentAst.value = [];
+
+    return {
+      astNode: parentAst
+    };
+  }
+
+  protected [Rules.MapConst]({ parentAst }: Input<astTypes.ThriftMapValue>): Result {
+    parentAst.node = "mapValue";
+    parentAst.value = [];
+
+    return {
+      astNode: parentAst
+    };
+  }
+
+  protected [Rules.MapValue]({ node, parentAst }: Input<astTypes.ThriftMapValue>): Result {
+    // TODO: This works around a bug where map value rules are run with consumption of
+    // empty comments (yuck), to avoid this we will yield a stop result if the node
+    // has no key or value
+    if (!node.children.MapKeyLabel || !node.children.MapValueLabel) {
+      return StopResult;
+    }
+
+    const element: astTypes.ThriftMapValueElement = {
+      node: "mapValueElement",
+      key: { node: "stubValue" },
+      value: { node: "stubValue" }
+    };
+
+    parentAst.value.push(element);
+
+    return {
+      astNode: node
     };
   }
 

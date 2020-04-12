@@ -21,6 +21,10 @@ export abstract class AbstractGenerator<
 
   protected abstract getChildren(node: TNode): TNode[] | undefined;
 
+  protected postProcess(_node: TGenerated, _state: TState): Promise<TGenerated> {
+    return Promise.resolve(_node);
+  }
+
   protected getVisitorFunc(nodeName: string | symbol): VisitorFunc<TGenerated, TState> | undefined {
     if (this.handlerMisses.has(nodeName)) {
       return undefined;
@@ -140,8 +144,15 @@ export abstract class AbstractGenerator<
     }
 
     const walkTime = walkTimeHandle();
+
+    // Post processing
+    const postTimeHandle = time();
+    const postRootGenerated = await this.postProcess(rootGenerated, rootState);
+    const postTime = postTimeHandle();
+
+    // Collection
     const collectOutputs = time();
-    const output: TOutput[] = await this.getOutputs(rootGenerated, rootState);
+    const output: TOutput[] = await this.getOutputs(postRootGenerated, rootState);
     const collectOutputsTime = collectOutputs();
 
     return {
@@ -149,8 +160,9 @@ export abstract class AbstractGenerator<
       warnings,
       output,
       performance: {
-        Walk: walkTime,
+        Walk: walkTime.subtract(this.visitTimer),
         Visit: this.visitTimer || fromMilliseconds(0),
+        Post: postTime,
         Collect: collectOutputsTime
       }
     };

@@ -5,7 +5,7 @@ import { getGeneratorFactory } from "..";
 
 describe("JSON Generation", () => {
   const testSet = getMatchingSnapshotAssets("json").map(i => [i.input, i.output]);
-  const generatorFactory = getGeneratorFactory("json");
+  const generatorFactory = getGeneratorFactory("json-o");
 
   test.skip.each(testSet)("should generate %s to %s", async (thriftInput, jsonOutput) => {
     const grammar = new ThriftGrammar();

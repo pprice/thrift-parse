@@ -59,8 +59,53 @@ export type MapType = {
   };
 };
 
+export type ThriftReferenceValue = {
+  node: "refValue";
+  identifier: string;
+};
+
 export type ThriftType = AnnotationNode &
   (RefType | UnknownType | BaseType | StructType | ExceptionType | UnionType | ListType | MapType | SetType);
+
+export type ThriftMapValueElement = { node: "mapValueElement"; key: ThriftValue; value: ThriftValue };
+
+export type ThriftBooleanValue = {
+  node: "booleanValue";
+  value: boolean;
+};
+
+export type ThriftStringValue = {
+  node: "stringValue";
+  value: string;
+};
+
+export type ThriftNumberValue = {
+  node: "numberValue";
+  value: number;
+};
+
+export type ThriftMapValue = {
+  node: "mapValue";
+  value: ThriftMapValueElement[];
+};
+
+export type ThriftListValue = {
+  node: "listValue";
+  value: ThriftValue[];
+};
+
+export type ThriftStubValue = {
+  node: "stubValue";
+};
+
+export type ThriftValue =
+  | ThriftBooleanValue
+  | ThriftStringValue
+  | ThriftNumberValue
+  | ThriftMapValue
+  | ThriftListValue
+  | ThriftStubValue
+  | ThriftReferenceValue;
 
 export type TypeKeys = ThriftType["typeId"];
 
@@ -108,7 +153,7 @@ export type ThriftConstant = DefaultNode &
   ThriftType & {
     node: "const";
     name: string;
-    value: unknown;
+    value: ThriftValue;
   };
 
 export type ThriftFunction = DefaultNode & {
@@ -152,4 +197,5 @@ export type ThriftNode =
   | ThriftTypedef
   | ThriftStruct
   | ThriftField
-  | ThriftFunction;
+  | ThriftFunction
+  | ThriftValue;

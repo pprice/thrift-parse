@@ -1,9 +1,12 @@
-import { ObjectOutput, OnBeforeVisitResult, GeneratorOutput, GeneratorResult } from "../types";
-import { makeChainedGenerator } from "../chained-generator";
-import { CstToAstGenerator } from "../ast/cst-to-ast-generator";
+import { AstGenerator, AstInput, AstResult, CstToAstGenerator, ThriftNode, ThriftRoot } from "../ast";
+import { GeneratorOutput, GeneratorResult, ObjectOutput, OnBeforeVisitResult, VisitorFunc } from "../types";
+
 import { Generator } from "..";
-import { ThriftRoot, AstGenerator } from "../ast";
+import { makeChainedGenerator } from "../chained-generator";
 import { time } from "../../perf-util";
+
+type Input<TNode extends ThriftNode = ThriftNode> = AstInput<object, unknown, TNode>;
+type Result = AstResult<object, unknown>;
 
 class InternalJsonObjectGenerator extends AstGenerator<ObjectOutput, object, unknown> {
   public name = "JsonObject";
@@ -15,6 +18,25 @@ class InternalJsonObjectGenerator extends AstGenerator<ObjectOutput, object, unk
     };
 
     return Promise.resolve([out]);
+  }
+
+  getVisitorFunc(name): VisitorFunc<object> {
+    const existing = super.getVisitorFunc(name);
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.fallback;
+  }
+
+  protected fallback({ node }: Input): Result {
+    const clone: ThriftNode = { ...node };
+    delete clone.node;
+
+    return {
+      astNode: clone
+    };
   }
 
   protected getInitialState(root: ThriftRoot): PromiseLike<OnBeforeVisitResult<object, unknown>> {

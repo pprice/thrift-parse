@@ -1,6 +1,9 @@
 import { AbstractGenerator } from "../abstract-generator";
 import { ThriftNode } from "./types";
-import { GeneratorOutput } from "../types";
+import { GeneratorOutput, VisitorInput, VisitorResult } from "../types";
+
+export type AstInput<TGenerated, TState = unknown, TNode extends ThriftNode = ThriftNode> = VisitorInput<TGenerated, TState, TNode>;
+export type AstResult<TGenerated, TState = unknown> = VisitorResult<TGenerated, TState>;
 
 export abstract class AstGenerator<TOutput extends GeneratorOutput, TGenerated, TState> extends AbstractGenerator<
   ThriftNode,
